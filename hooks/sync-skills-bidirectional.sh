@@ -3,8 +3,11 @@
 # Bidirectional sync between ~/.claude/ and brown-saved-skills repo.
 # Usage:
 #   sync-skills-bidirectional.sh push   - local -> repo (commit & push)
-#   sync-skills-bidirectional.sh pull   - repo -> local (skills only, not settings)
+#   sync-skills-bidirectional.sh pull   - repo -> local
 #   sync-skills-bidirectional.sh both   - pull then push (full sync)
+#
+# NOTE: scheduled-tasks are NOT synced on this device (they run on another machine).
+# Settings and hooks are push-only (machine-specific paths).
 
 set -euo pipefail
 
@@ -13,12 +16,13 @@ CLAUDE_DIR="$HOME/.claude"
 REPO_DIR="$HOME/brown-saved-skills"
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 
-# Directories synced in BOTH directions
-PULL_DIRS=(skills commands scheduled-tasks plans tasks todos)
+# Directories synced in BOTH directions (pulled from repo AND pushed to repo)
+BIDIRECTIONAL_DIRS=(skills commands plans tasks todos)
 # Directories only pushed (local -> repo), never pulled (machine-specific content)
 PUSH_ONLY_DIRS=(hooks)
 # Files only pushed, never pulled (contain machine-specific paths)
 PUSH_ONLY_FILES=(settings.json settings.local.json)
+# NOT synced on this device: scheduled-tasks (managed on another machine)
 
 log() { echo "[skill-sync] $*"; }
 
@@ -35,8 +39,7 @@ pull_from_repo() {
     git fetch origin 2>/dev/null
     git reset --hard origin/main 2>/dev/null || true
 
-    # Only pull safe directories (not hooks or settings - those are machine-specific)
-    for dir in "${PULL_DIRS[@]}"; do
+    for dir in "${BIDIRECTIONAL_DIRS[@]}"; do
         src="$REPO_DIR/$dir"
         dest="$CLAUDE_DIR/$dir"
         if [ -d "$src" ]; then
@@ -67,8 +70,8 @@ push_to_repo() {
     git fetch origin 2>/dev/null
     git reset --hard origin/main 2>/dev/null || true
 
-    # Sync pull dirs: local -> repo
-    for dir in "${PULL_DIRS[@]}"; do
+    # Sync bidirectional dirs: local -> repo
+    for dir in "${BIDIRECTIONAL_DIRS[@]}"; do
         src="$CLAUDE_DIR/$dir"
         dest="$REPO_DIR/$dir"
         if [ -d "$src" ]; then

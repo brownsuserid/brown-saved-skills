@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # skill-crud-sync.sh
-# PostToolUse hook: triggers push to brown-saved-skills when a skill file is modified.
+# PostToolUse hook: triggers push to brown-saved-skills when any Claude config file
+# is created, updated, or deleted (skills, commands, hooks, plans, tasks, todos,
+# settings, or project memory).
 
 INPUT=$(cat)
 
@@ -24,8 +26,8 @@ fi
 # Normalize path separators for Windows
 FILE_PATH=$(echo "$FILE_PATH" | sed 's|\\|/|g')
 
-# Check if the file is under ~/.claude/skills/
-if echo "$FILE_PATH" | grep -qi "\.claude/skills\|\.claude\\\\skills"; then
+# Check if the file is under any synced ~/.claude/ directory or is a synced config file
+if echo "$FILE_PATH" | grep -qiE '\.claude/(skills|commands|hooks|plans|tasks|todos|projects)/|\.claude/settings(\.local)?\.json'; then
     SCRIPT_DIR="$(dirname "$0")"
     "$SCRIPT_DIR/sync-skills-bidirectional.sh" push &>/dev/null &
 fi
