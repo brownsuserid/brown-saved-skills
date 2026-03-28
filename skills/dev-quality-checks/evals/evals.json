@@ -1,0 +1,49 @@
+{
+  "skill_name": "dev-quality-checks",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I just finished implementing a new feature for our Python FastAPI project. It adds a user notification preferences endpoint. The stop hook passed on the last turn. Can you run the full quality checks to make sure everything is production-ready?",
+      "expected_output": "A systematic quality check process that verifies stop hook results, runs integration tests with .env sourcing, runs bandit security scanning, and requests user validation before declaring production-ready.",
+      "files": [],
+      "expectations": [
+        "Checks stop hook output first before proceeding to manual checks (Phase 1)",
+        "Runs integration tests using the correct command: set -a && source .env && set +a && PYTHONPATH=. uv run pytest -m integration -v",
+        "Runs bandit security scanning using: uv run bandit -c pyproject.toml -r .",
+        "Uses TodoWrite to track progress through the quality check phases",
+        "Treats every test failure as a blocker — does not skip or dismiss any failures",
+        "Asks the user to validate and test the application after automated checks pass (Phase 4)",
+        "Only declares production-ready after all four phases complete (stop hook, integration tests, security scan, user validation)"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I ran quality checks and bandit found a B602 shell injection issue in my deploy_utils.py where I'm using subprocess.call with shell=True. I fixed it by switching to subprocess.call with a list. The integration tests passed before the fix. What should I do now?",
+      "expected_output": "Re-run the full quality pipeline starting from integration tests, then re-run bandit to confirm the fix, then proceed to user validation. Security fixes require re-testing because they can change behavior.",
+      "files": [],
+      "expectations": [
+        "Instructs to re-run integration tests after the security fix (not just re-run bandit)",
+        "Explains WHY re-running integration tests is necessary — security fixes can change behavior, modify validation logic, or alter error handling",
+        "Re-runs bandit to confirm the B602 issue is resolved",
+        "Does not skip straight to user validation after fixing the security issue",
+        "Follows the correct post-security-fix flow: fix -> re-run integration tests -> re-run bandit -> user validation",
+        "Treats the re-run as mandatory, not optional"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "I'm running quality checks and 3 integration tests are failing. Two are database connection errors and one is a timeout. I didn't change any database code — these failures seem pre-existing. Can I just skip them and move on to the security scan?",
+      "expected_output": "Firm refusal to skip failing tests. Every failure is a blocker regardless of when it was introduced. Provides systematic debugging guidance for the specific failure types (database connection, timeout).",
+      "files": [],
+      "expectations": [
+        "Refuses to skip or dismiss the failing integration tests — treats every failure as a blocker",
+        "Explicitly states there is no concept of 'pre-existing failures' in quality checks",
+        "Provides specific troubleshooting for database connection errors (check .env, verify Docker running, check connection string)",
+        "Provides specific troubleshooting for timeout errors (container startup, missing test timeout, slow queries)",
+        "Recommends running a single failing test in isolation to diagnose: pytest -k test_name -v -m integration",
+        "Does not proceed to security scanning until all integration tests pass",
+        "If genuinely unable to fix, instructs to stop and report to user with full details rather than silently skipping"
+      ]
+    }
+  ]
+}

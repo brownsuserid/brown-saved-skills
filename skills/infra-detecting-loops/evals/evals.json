@@ -1,0 +1,149 @@
+{
+  "skill_name": "infra-detecting-loops",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "We have a CDK project in cdk/ with an EventBridge rule that fires every 5 minutes and triggers a Lambda that queries DynamoDB for records where needs_processing is True. The Lambda processes each record and updates a status field, but I'm worried it might loop if processing fails. Can you audit this for infinite loop risks?",
+      "expected_output": "Agent maps the EventBridge -> Lambda -> DynamoDB trigger chain, identifies that the needs_processing flag may not be cleared on failure paths, checks for concurrency guards and DLQ configuration, examines the Lambda timeout setting, looks for retry configuration, and produces a structured report with severity ratings and specific code fixes (three-state flag pattern).",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Agent traces the full trigger chain: EventBridge schedule -> Lambda -> DynamoDB query -> processing -> flag update",
+          "type": "process"
+        },
+        {
+          "text": "Agent specifically checks whether the needs_processing flag is cleared on FAILURE paths, not just success paths",
+          "type": "quality"
+        },
+        {
+          "text": "Agent checks for concurrency guards (reserved_concurrent_executions) on the Lambda",
+          "type": "quality"
+        },
+        {
+          "text": "Agent checks for DLQ configuration on the Lambda or event source",
+          "type": "quality"
+        },
+        {
+          "text": "Agent recommends the three-state flag pattern (pending/processing/failed) or equivalent",
+          "type": "quality"
+        },
+        {
+          "text": "Agent produces a structured findings report with severity classification (CRITICAL/HIGH/MEDIUM/LOW)",
+          "type": "quality"
+        },
+        {
+          "text": "Agent checks Lambda timeout setting and flags if set to 900s or left at default",
+          "type": "quality"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I've got a Step Function that processes deals in a Map state. Each deal goes through a brain Lambda, then a Choice state checks if the result is valid — if not, it loops back to retry the brain. There's no limit on retries. The Map state also doesn't have MaxConcurrency set. Can you check this for loop issues? The SFN definition is in cdk/state_machines/deal_processor.asl.json.",
+      "expected_output": "Agent analyzes the ASL definition, identifies the Choice state cycle without an exit counter, flags the unbounded retry loop, checks for missing MaxConcurrency on the Map state, calculates potential cost impact, checks for TimeoutSeconds at both state and execution level, and recommends adding a retry counter with max threshold plus Catch fallback.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Agent identifies the Choice state -> earlier state cycle and flags it as a potential infinite loop",
+          "type": "process"
+        },
+        {
+          "text": "Agent checks whether the cycle path modifies the Choice condition to eventually exit",
+          "type": "quality"
+        },
+        {
+          "text": "Agent flags missing MaxConcurrency on the Map state as a risk",
+          "type": "quality"
+        },
+        {
+          "text": "Agent checks for TimeoutSeconds at both the task state and execution level",
+          "type": "quality"
+        },
+        {
+          "text": "Agent recommends adding a retry counter variable that increments each loop and exits after a threshold",
+          "type": "quality"
+        },
+        {
+          "text": "Agent checks for Catch blocks on task states to handle failures gracefully",
+          "type": "quality"
+        },
+        {
+          "text": "Agent checks for ResultSelector or ResultPath to prevent Map state output explosion (256KB limit)",
+          "type": "quality"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Our Lambda that processes S3 uploads is writing transformed files back to the same bucket. We're seeing the Lambda invocation count spike to thousands per minute. I think we have an S3 event loop. The CDK is in cdk/ and the Lambda handler is in lambdas/transform_upload/handler.py. Can you investigate and tell me how to fix it?",
+      "expected_output": "Agent confirms the S3 event -> Lambda -> same bucket write loop pattern, checks the S3 event notification configuration for prefix/suffix filters, examines the Lambda handler to see if it writes to the same bucket, checks for any existing guards (prefix check in handler, concurrency limit), calculates blast radius (cost per hour at current invocation rate), and recommends either separate buckets or prefix filtering as the fix.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Agent identifies the S3 PutObject -> Lambda -> same bucket write as the classic S3 event loop (Pattern C)",
+          "type": "process"
+        },
+        {
+          "text": "Agent checks the S3 event notification configuration for prefix/suffix filters in the CDK code",
+          "type": "quality"
+        },
+        {
+          "text": "Agent examines the Lambda handler code to confirm it writes back to the same bucket",
+          "type": "process"
+        },
+        {
+          "text": "Agent recommends separate input/output buckets or prefix filtering as the primary fix",
+          "type": "quality"
+        },
+        {
+          "text": "Agent assesses blast radius — cost impact, potential data corruption, downstream effects",
+          "type": "quality"
+        },
+        {
+          "text": "Agent checks Lambda concurrency limit as an immediate mitigation while the proper fix is implemented",
+          "type": "quality"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Can you do a full loop detection audit of our CDK project? We have 3 stacks with EventBridge rules, DynamoDB streams, a couple Step Functions, and about 8 Lambdas. I want to know if there are any infinite loop risks before we deploy to production. The project root is the current directory.",
+      "expected_output": "Agent runs the full 7-phase audit: maps the project structure, runs cfn-lint and Checkov on synthesized templates, traces all EventBridge -> Lambda chains, analyzes DynamoDB stream handlers for same-table writes, parses Step Function definitions for cycles and unbounded retries, checks all Lambdas for self-invocation and missing defenses, catalogs existing safeguards, and produces a comprehensive report with prioritized findings.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Agent maps the full project structure — identifies all EventBridge rules, Lambdas, Step Functions, DynamoDB streams, and SQS queues",
+          "type": "process"
+        },
+        {
+          "text": "Agent synthesizes CDK templates and runs cfn-lint for circular dependency detection (E3004)",
+          "type": "process"
+        },
+        {
+          "text": "Agent traces trigger chains for every EventBridge rule, checking if target Lambdas modify the trigger condition on all code paths",
+          "type": "quality"
+        },
+        {
+          "text": "Agent checks DynamoDB stream handlers for same-table write patterns",
+          "type": "quality"
+        },
+        {
+          "text": "Agent analyzes Step Function definitions for Choice state cycles and unbounded retries",
+          "type": "quality"
+        },
+        {
+          "text": "Agent audits existing defense mechanisms (concurrency limits, DLQs, timeouts, idempotency) across all Lambdas",
+          "type": "quality"
+        },
+        {
+          "text": "Agent produces a structured report using the template with severity classifications and remediation plan",
+          "type": "quality"
+        },
+        {
+          "text": "Agent prioritizes findings by blast radius (cost and data impact), not just likelihood",
+          "type": "quality"
+        }
+      ]
+    }
+  ]
+}

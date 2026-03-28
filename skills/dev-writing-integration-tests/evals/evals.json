@@ -1,0 +1,23 @@
+{
+  "skill_name": "writing-integration-tests",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I have a FastAPI app with a users endpoint that does CRUD against Postgres. Right now all my tests mock the database and I keep getting bugs in production where queries return wrong results because of joins. Can you help me write integration tests that actually hit a real database? The app uses SQLAlchemy with async sessions. Here's the structure:\n\nsrc/\n  app/\n    main.py\n    models.py (User, Order models with relationships)\n    routes/users.py\n    db.py (get_db dependency)\ntests/\n  unit/\n    test_users.py",
+      "expected_output": "Should create integration tests using Testcontainers with PostgreSQL, set up proper fixtures with transaction rollback, use @pytest.mark.integration, test the actual database queries that were causing production bugs (joins, relationships), and organize tests in tests/integration/",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "We just deployed a new Step Function workflow that processes incoming webhook events. It has 3 Lambda functions chained together: validate-event, transform-payload, and store-result. I need to write tests that verify the whole thing actually works in our dev AWS account. We use CDK and the functions are deployed as dev-webhook-validate-event, dev-webhook-transform-payload, dev-webhook-store-result. The state machine is dev-webhook-processor. Account is 111222333444 in us-east-1.",
+      "expected_output": "Should create live AWS tests with @pytest.mark.live_aws, set up aws_config.py with the specific resource names/ARNs, create conftest.py with boto3 fixtures, write tests that invoke the step function with test data and verify completion, include verification fixtures that check resources exist before testing",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "I'm building an e-commerce checkout flow. When a customer places an order, it needs to: 1) validate inventory in the products table, 2) create an order record, 3) process payment via Stripe API, 4) send confirmation email via SES, 5) publish an OrderCreated event to SQS. I want integration tests for this whole workflow. We use pytest and have Docker available. What's the right approach?",
+      "expected_output": "Should create integration tests that use Testcontainers for Postgres and possibly SQS (or mock SQS), mock Stripe and SES as external services, test the complete workflow end-to-end, test error scenarios (payment failure, out of stock), use transaction rollback for isolation, and follow the testing pyramid guidance about what to mock vs test real",
+      "files": []
+    }
+  ]
+}

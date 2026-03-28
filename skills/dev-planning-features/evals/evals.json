@@ -1,0 +1,61 @@
+{
+  "skill_name": "dev-planning-features",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I need to add a webhook retry system to our notification service. When a webhook delivery fails, it should retry with exponential backoff up to 5 times. We're using Python with FastAPI and storing webhook configs in DynamoDB. Plan this out for me.",
+      "expected_output": "A comprehensive feature plan with Definition of Done, pseudocode implementation, test specifications, and architectural review covering all five lenses.",
+      "files": [],
+      "expectations": [
+        "Plan starts with a Definition of Done section containing specific, observable completion criteria (not vague statements like 'works correctly')",
+        "Definition of Done includes acceptance scenarios with Given/When/Then format using concrete values (e.g., specific retry intervals, HTTP status codes)",
+        "Plan includes an Out of Scope section explicitly listing what is NOT included",
+        "Plan includes unit test specifications written BEFORE implementation with concrete input values and expected outputs",
+        "Test specifications include happy path, edge cases, error cases, AND error propagation tests",
+        "Plan uses pseudocode (not full implementation code) to describe the approach",
+        "Plan includes setup instructions referencing git worktree creation via ~/scripts/wt.sh",
+        "Plan includes an Architectural Review section covering all 5 lenses (Scalability, Reliability, Cost, Fitness for Purpose, Code Health)",
+        "Plan includes observability section with structured logging, correlation IDs, and metrics",
+        "Plan includes explicit trade-offs section documenting architectural decisions with rationale",
+        "Plan references quality checks appropriate to the stack (ruff, mypy, bandit for Python)",
+        "Plan includes an Autonomous Execution Safety Checklist section with all items checked and no vague language remaining"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "We need to build a CSV export feature for our admin dashboard. Users should be able to export filtered data from any table view. The frontend is React/TypeScript and the backend is a Node.js Express API with PostgreSQL. How should we approach this?",
+      "expected_output": "A detailed feature plan that handles the non-Python stack appropriately, with Definition of Done, pseudocode, tests, and architectural review.",
+      "files": [],
+      "expectations": [
+        "Plan starts with a Definition of Done section with specific, testable criteria",
+        "Definition of Done criteria describe observable behavior (e.g., 'clicking Export CSV downloads a file containing all visible rows with applied filters')",
+        "Plan includes acceptance scenarios with concrete values (specific filter combinations, expected row counts, column headers)",
+        "Plan adapts quality check recommendations to the Node.js/TypeScript stack (not defaulting to Python tools like ruff/mypy)",
+        "Plan includes test specifications with concrete input values and expected outputs",
+        "Plan uses pseudocode to show the approach, not full TypeScript/React code",
+        "Plan addresses scalability — what happens with large datasets (pagination, streaming, background jobs)",
+        "Plan includes an architectural review covering reliability (what if the export fails mid-stream?)",
+        "Plan includes a Fitness for Purpose review (streaming vs buffered, CSV library choice)",
+        "Plan includes error propagation tests — verifying errors are not silently swallowed"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "I want to add rate limiting to our public API. We need per-customer limits with different tiers (free: 100/hour, pro: 1000/hour, enterprise: 10000/hour). The API runs on AWS Lambda behind API Gateway. Let's think through how to build this.",
+      "expected_output": "A comprehensive plan covering the rate limiting implementation with Definition of Done, pseudocode, test specs, and thorough architectural review especially around scalability and cost.",
+      "files": [],
+      "expectations": [
+        "Plan starts with a Definition of Done containing specific criteria for each tier's behavior",
+        "Acceptance scenarios include concrete rate limit values and expected responses when limits are exceeded (specific HTTP status codes, response bodies, retry-after headers)",
+        "Plan includes test specifications for boundary conditions (exactly at limit, one over limit, limit reset timing)",
+        "Plan addresses the architectural challenge of distributed rate limiting across Lambda instances",
+        "Cost optimization review addresses the storage/lookup cost of rate limit counters at scale",
+        "Plan includes reliability analysis — what happens if the rate limit store (Redis/DynamoDB) is unavailable",
+        "Plan uses pseudocode to describe the rate limiting algorithm",
+        "Plan includes Code Health review — checks for existing anti-patterns in the API code",
+        "Plan includes observability section with metrics for rate limit hits and rate limit exceeded counts",
+        "Plan includes an Autonomous Execution Safety Checklist section with all items checked and no vague language remaining"
+      ]
+    }
+  ]
+}

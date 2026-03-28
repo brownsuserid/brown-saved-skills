@@ -1,0 +1,137 @@
+{
+  "skill_name": "infra-oauth-lambda",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I need to add a self-service OAuth flow so our sales team can connect their Google Gmail accounts to our app. We're using CDK in Python and the project is in cdk/ with a deploy script at deploy.sh. The Lambda functions live in lambda_functions/. We want credentials stored in Secrets Manager so the email-sending Lambda can use them. AWS profile is PowerUser-398105904466, region us-east-1.",
+      "expected_output": "Agent creates a complete OAuth flow: Lambda handler with /oauth, /oauth/start, /oauth/callback routes using URL-encoded token exchange (not multipart), a CDK construct with HTTP API Gateway (not REST), IAM role with Secrets Manager write access, and proper environment variables. Lambda uses urllib3 with body= parameter and Content-Type: application/x-www-form-urlencoded. Credentials are stored keyed by email address. Agent provides instructions for configuring Google Cloud Console redirect URI.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Lambda handler uses urllib.parse.urlencode() with body= parameter for token exchange, NOT urllib3 fields= parameter",
+          "type": "correctness"
+        },
+        {
+          "text": "Lambda explicitly sets Content-Type: application/x-www-form-urlencoded header on the token exchange request",
+          "type": "correctness"
+        },
+        {
+          "text": "CDK construct uses HTTP API Gateway (apigwv2.HttpApi), not REST API Gateway",
+          "type": "correctness"
+        },
+        {
+          "text": "IAM role grants both grant_read AND grant_write on the Secrets Manager secret",
+          "type": "correctness"
+        },
+        {
+          "text": "Lambda fetches userinfo email after token exchange to auto-name the credential alias",
+          "type": "quality"
+        },
+        {
+          "text": "Agent includes prompt=consent and access_type=offline in the OAuth authorization URL to ensure refresh tokens are returned",
+          "type": "correctness"
+        },
+        {
+          "text": "Agent provides guidance on configuring the OAuth redirect URI in Google Cloud Console",
+          "type": "process"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "We need to set up Microsoft OAuth for our internal tool that reads Outlook calendars. The CDK project already has a stack with some Lambdas and a DynamoDB table. I want to add an OAuth credential collection endpoint so team members can authorize their Microsoft 365 accounts via browser. Tenant is 'organizations' since it's work accounts only. Profile PowerUser-398105904466, us-east-1.",
+      "expected_output": "Agent creates a Microsoft-specific OAuth flow, correctly using the /organizations/ tenant in endpoint URLs, requesting offline_access scope for refresh tokens, and using the Microsoft Graph userinfo endpoint (graph.microsoft.com/v1.0/me). Agent integrates the OAuth construct into the existing stack without disrupting existing resources. Token exchange uses URL-encoded form data.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Agent uses Microsoft-specific OAuth endpoints with /organizations/ tenant (login.microsoftonline.com/organizations/oauth2/v2.0/authorize and /token)",
+          "type": "correctness"
+        },
+        {
+          "text": "Agent includes offline_access in the Microsoft scopes to get refresh tokens (Microsoft requires this explicitly, unlike Google's access_type=offline)",
+          "type": "correctness"
+        },
+        {
+          "text": "Agent uses Microsoft Graph API (graph.microsoft.com/v1.0/me) for userinfo, not the Google userinfo endpoint",
+          "type": "correctness"
+        },
+        {
+          "text": "Agent integrates the OAuth construct into the existing CDK stack alongside existing resources without replacing them",
+          "type": "process"
+        },
+        {
+          "text": "Token exchange uses URL-encoded form data with explicit Content-Type header, not multipart",
+          "type": "correctness"
+        },
+        {
+          "text": "Agent includes Calendar-related scopes (Calendars.Read or similar) matching the user's stated use case",
+          "type": "quality"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "I'm adding Slack OAuth to our project so we can post messages to customer Slack channels. The tricky part is Slack uses comma-separated scopes instead of space-separated, and the token response format is different. Can you set up the OAuth Lambda and CDK infrastructure for Slack bot tokens?",
+      "expected_output": "Agent handles Slack-specific OAuth quirks: comma-separated scopes in the authorization URL, Slack's different token response format (ok/access_token fields), and bot token storage. Agent correctly adapts the Lambda template for Slack's API differences while maintaining the same architecture pattern (HTTP API Gateway + Lambda + Secrets Manager).",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Agent uses comma-separated scopes for Slack (not space-separated like Google/Microsoft)",
+          "type": "correctness"
+        },
+        {
+          "text": "Agent uses Slack-specific OAuth endpoints (slack.com/oauth/v2/authorize and slack.com/api/oauth.v2.access)",
+          "type": "correctness"
+        },
+        {
+          "text": "Agent handles Slack's token response format which uses 'ok' field and nested 'access_token' differently than Google/Microsoft",
+          "type": "quality"
+        },
+        {
+          "text": "Agent includes relevant bot scopes like chat:write for the stated use case of posting messages",
+          "type": "quality"
+        },
+        {
+          "text": "Token exchange still uses URL-encoded form data (consistent across all providers)",
+          "type": "correctness"
+        },
+        {
+          "text": "CDK infrastructure follows the same pattern (HTTP API Gateway + Lambda + Secrets Manager) as other providers",
+          "type": "process"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Our OAuth flow is broken. When users complete the Google consent screen and get redirected back to our Lambda callback, they see an error page saying 'Token Exchange Failed' with the detail 'unsupported_grant_type: Invalid grant_type: '. The Lambda is already deployed. I need help debugging and fixing this. Profile PowerUser-398105904466, us-east-1.",
+      "expected_output": "Agent immediately identifies this as the classic multipart vs URL-encoded bug. The 'unsupported_grant_type' error with empty grant_type value means the Lambda is sending multipart/form-data (probably using urllib3 fields= parameter) instead of application/x-www-form-urlencoded. Agent fixes the token exchange code to use urllib.parse.urlencode() with body= and explicit Content-Type header.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Agent identifies the root cause as multipart vs URL-encoded content type mismatch without needing extensive log analysis",
+          "type": "quality"
+        },
+        {
+          "text": "Agent explains that urllib3 fields= sends multipart/form-data which Google rejects, and the fix is urllib.parse.urlencode() with body=",
+          "type": "quality"
+        },
+        {
+          "text": "Agent provides the corrected code with urllib.parse.urlencode(token_data) as body and Content-Type: application/x-www-form-urlencoded header",
+          "type": "correctness"
+        },
+        {
+          "text": "Agent checks the existing Lambda code to confirm the bug before prescribing the fix (reads the deployed code or asks about it)",
+          "type": "process"
+        },
+        {
+          "text": "Agent provides instructions for redeploying the fixed Lambda (either CDK deploy or direct update)",
+          "type": "process"
+        },
+        {
+          "text": "Agent suggests testing the fix by re-running the OAuth flow and checking for a success page with the user's email",
+          "type": "quality"
+        }
+      ]
+    }
+  ]
+}

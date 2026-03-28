@@ -1,0 +1,137 @@
+{
+  "skill_name": "auditing-aws-spending",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I want to do a full account-level cost audit of our AWS account. We're on the bb-east profile and spend mainly on Lambda, DynamoDB, and S3. We have customer and product cost allocation tags on our resources. Our bill has been creeping up and I want to understand where the money is going and find anything we can cut. Can you run through the full audit?",
+      "expected_output": "Follows the 8-phase audit process. Breaks down costs by service AND by customer/product tags. Identifies which customers and products are driving cost growth. Flags untagged spend. Checks for idle resources, rightsizing, commitments, anomalies. Produces a prioritized report with customer/product attribution.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Verifies AWS credentials/access before starting analysis (aws sts get-caller-identity or equivalent)",
+          "type": "process"
+        },
+        {
+          "text": "Queries Cost Explorer for spend breakdown by service using aws ce get-cost-and-usage with --group-by SERVICE",
+          "type": "process"
+        },
+        {
+          "text": "Breaks down costs by customer tag using --group-by Type=TAG,Key=customer",
+          "type": "process"
+        },
+        {
+          "text": "Breaks down costs by product tag using --group-by Type=TAG,Key=product",
+          "type": "process"
+        },
+        {
+          "text": "Identifies or flags untagged spend (resources missing customer/product tags)",
+          "type": "quality"
+        },
+        {
+          "text": "Checks for idle resources: at minimum unattached EBS volumes and unused Elastic IPs",
+          "type": "process"
+        },
+        {
+          "text": "Produces a structured report with cost-by-customer and cost-by-product tables",
+          "type": "quality"
+        },
+        {
+          "text": "Report includes prioritized findings with estimated savings amounts",
+          "type": "quality"
+        },
+        {
+          "text": "Sets the AWS_PROFILE to bb-east as specified by the user",
+          "type": "correctness"
+        },
+        {
+          "text": "Covers at least 5 of the 8 phases defined in the skill (scope, spend analysis, idle resources, trusted advisor, rightsizing, commitments, anomalies, report)",
+          "type": "quality"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "We have a project called 'notifier' deployed in us-east-1. All resources are tagged with Project=notifier and Environment=prod. We also use customer and product tags across our infra. It's a CDK Python project using Lambda, DynamoDB, SQS, and SNS. Can you audit just this project's AWS spending? I think we're overpaying on Lambda memory and might have some orphaned resources from an old deployment.",
+      "expected_output": "Identifies this as a project-level audit and uses tag-based filtering throughout. Shows cost attribution by customer and product even within the project scope. Checks Lambda memory vs actual usage. Analyzes DynamoDB provisioned capacity utilization. Checks for orphaned CloudFormation stacks, DLQ accumulation, and log retention policies. Validates findings against CDK code.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Correctly identifies this as a project-level (not account-level) audit and uses tag filtering",
+          "type": "process"
+        },
+        {
+          "text": "Filters Cost Explorer queries using --filter with Tags Key=Project Values=notifier",
+          "type": "process"
+        },
+        {
+          "text": "Breaks down project costs by customer and/or product tags to show which customers/products drive this project's spend",
+          "type": "quality"
+        },
+        {
+          "text": "Compares Lambda configured memory vs actual peak usage to find over-provisioned functions",
+          "type": "quality"
+        },
+        {
+          "text": "Checks DynamoDB provisioned capacity utilization (consumed vs provisioned RCU/WCU) for tables using provisioned mode",
+          "type": "quality"
+        },
+        {
+          "text": "Looks for orphaned CloudFormation stacks or individual orphaned resources from old deployments",
+          "type": "quality"
+        },
+        {
+          "text": "Checks SQS dead letter queues for message accumulation indicating processing failures",
+          "type": "quality"
+        },
+        {
+          "text": "Checks CloudWatch log group retention policies and flags groups with no retention set",
+          "type": "quality"
+        },
+        {
+          "text": "Attempts to validate findings against CDK code before final recommendations",
+          "type": "quality"
+        },
+        {
+          "text": "Report distinguishes project costs from account-wide costs",
+          "type": "quality"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Our AWS bill jumped 40% last month compared to the month before. We use customer and product tags on everything. I need you to investigate what's driving the increase — which customers or products caused it, what services spiked. I'm on the default AWS profile. I need a report I can share with my manager that breaks it down by customer.",
+      "expected_output": "Investigates the cost spike with customer/product attribution front and center. Shows which customers grew the most, which products drove the increase. Compares MoM by service AND by customer/product. Produces a manager-friendly report with clear customer-level findings.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Compares current month vs previous month spending to identify which services drove the 40% increase",
+          "type": "process"
+        },
+        {
+          "text": "Breaks down the cost increase by customer tag to show which customers drove the spike",
+          "type": "process"
+        },
+        {
+          "text": "Breaks down the cost increase by product tag to show which products drove the spike",
+          "type": "process"
+        },
+        {
+          "text": "Uses daily granularity (DAILY) in Cost Explorer to identify when the spike started",
+          "type": "process"
+        },
+        {
+          "text": "Checks Cost Anomaly Detection (aws ce get-anomalies) for flagged anomalies",
+          "type": "process"
+        },
+        {
+          "text": "Report includes cost-by-customer table showing each customer's contribution to the increase",
+          "type": "quality"
+        },
+        {
+          "text": "Produces a report formatted for sharing with management (executive summary, clear findings, recommended actions)",
+          "type": "quality"
+        }
+      ]
+    }
+  ]
+}

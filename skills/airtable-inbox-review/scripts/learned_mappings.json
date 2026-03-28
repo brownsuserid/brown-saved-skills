@@ -1,0 +1,50 @@
+{
+  "bb_financial_spreadsheet": {
+    "id": "1ekp6UalilPWkE4hRpZ5Kv2m6nS7TFq23_fXylgoVSBI",
+    "name": "Brain Bridge Expenses and Payments",
+    "receipt_entry_range": "A:F",
+    "account": "aaron@brainbridge.app"
+  },
+  "email_rules": [
+    {
+      "pattern": "(receipts?|invoice.*?)@.*anthropic\\.com",
+      "action": "log_to_sheet",
+      "sheet_key": "bb_financial_spreadsheet",
+      "category": "AI API Credits",
+      "auto_archive": true
+    },
+    {
+      "pattern": "receipts?@.*openrouter\\.ai",
+      "action": "log_to_sheet",
+      "sheet_key": "bb_financial_spreadsheet",
+      "category": "AI API Credits",
+      "auto_archive": true
+    },
+    {
+      "pattern": "quickbooks@.*intuit\\.com",
+      "action": "log_to_sheet",
+      "sheet_key": "bb_financial_spreadsheet",
+      "category": "Contractor - Virtual Latinos",
+      "auto_archive": true
+    },
+    {
+      "pattern": ".*@.*beehiiv\\.com",
+      "action": "label_and_archive",
+      "add_labels": ["Digest"],
+      "auto_archive": true
+    },
+    {
+      "pattern": "newsletters-noreply@linkedin\\.com",
+      "action": "label_and_archive",
+      "add_labels": ["Digest"],
+      "auto_archive": true,
+      "auto_task": {
+        "base": "aitb",
+        "title_template": "Re-share Peter Mantas article on LinkedIn",
+        "assignee": "pablo",
+        "project": "recjLTOUSly8eOeWX",
+        "notes": "Promote Peter's latest Optics Valley newsletter by re-sharing on LinkedIn with a brief comment."
+      }
+    }
+  ]
+}

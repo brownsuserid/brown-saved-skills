@@ -1,0 +1,11 @@
+[project]
+name = "order-pipeline"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = ["aws-cdk-lib>=2.170.0", "constructs>=10.0.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[dependency-groups]
+dev = ["pytest>=8.0", "pytest-cov>=4.0"]

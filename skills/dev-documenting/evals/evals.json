@@ -1,0 +1,67 @@
+{
+  "skill_name": "documenting",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "This sample project has no README and the Python files have no docstrings. Can you add documentation? The code is in evals/files/sample-project/. I need a README and docstrings for the public API.",
+      "expected_output": "A README.md file in the sample-project root with project description, installation, quick start, and usage sections. Google-style docstrings added to all public classes and functions in calculator.py and data_processor.py. Docstrings must be written as tool definitions with concrete example values, explicit constraints, complete return structures, and error recovery guidance.",
+      "files": [
+        "evals/files/sample-project/src/calculator.py",
+        "evals/files/sample-project/src/data_processor.py",
+        "evals/files/sample-project/pyproject.toml"
+      ],
+      "expectations": [
+        "A README.md file was created in the sample-project directory",
+        "The README includes a project description explaining what the project does",
+        "The README includes a Quick Start or usage example with working code",
+        "The Calculator class has a class-level docstring",
+        "The calculate_compound_interest function has a docstring with Args and Returns sections",
+        "The DataProcessor class has a class-level docstring",
+        "The DataProcessor.load_csv method has a docstring describing parameters",
+        "Docstrings follow Google style format (Args:, Returns:, Raises: sections)",
+        "EVERY parameter across ALL docstrings includes a concrete example value (e.g., 'rate: ... (e.g., 0.2 for 20% off)' or 'filename: ... (e.g., \"sales.csv\")'). Check at least 5 different parameters across both files — if more than 1 parameter lacks an example value, this assertion fails",
+        "The calculate_compound_interest Returns section documents ALL dict keys individually (principal, rate, years, final_amount, interest_earned) — not just 'returns a dict'",
+        "Raises sections include error recovery guidance — not just 'ValueError: If X is invalid' but what the caller should do about it (e.g., 'pass as decimal not percentage', 'check file exists before calling'). Check at least 2 Raises entries",
+        "The agent ran doctests (python -m doctest or pytest --doctest-modules) and the transcript shows the command execution and results"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I'm preparing for a release and need the documentation reviewed and updated for the sample project in evals/files/sample-project/. Check what's missing and fix it. Make sure everything is accurate and examples actually work.",
+      "expected_output": "A documentation audit identifying gaps, followed by fixes. Should check for missing docstrings, verify example accuracy, and ensure documentation matches the actual code signatures. Docstrings must be written as tool definitions: concrete examples for every parameter, explicit constraints, complete return structures, error recovery guidance.",
+      "files": [
+        "evals/files/sample-project/src/calculator.py",
+        "evals/files/sample-project/src/data_processor.py",
+        "evals/files/sample-project/pyproject.toml"
+      ],
+      "expectations": [
+        "The agent identified that README.md is missing",
+        "The agent identified undocumented functions or classes",
+        "Docstrings added match actual function signatures (correct parameter names and types)",
+        "The agent used TodoWrite or a structured approach to track documentation tasks",
+        "Examples in docstrings are realistic and would produce the stated results",
+        "The divide method's ZeroDivisionError Raises entry includes recovery guidance — not just 'If b is zero' but guidance like 'validate divisor before calling' or 'catch and prompt for non-zero value'",
+        "EVERY parameter includes explicit constraints (ranges, valid formats, required vs optional) AND a concrete example value. Check at least 5 parameters — if more than 1 lacks either constraint or example, this fails",
+        "The agent ran doctests (python -m doctest or pytest --doctest-modules) and the transcript shows the command execution with pass/fail results"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Add usage examples documentation for the data_processor module in evals/files/sample-project/src/data_processor.py. I want developers to quickly understand how to load data, filter it, and export results. Create a standalone examples file.",
+      "expected_output": "A usage examples document (markdown or Python file) showing how to use DataProcessor for common tasks: loading CSV/JSON, filtering records, aggregating data, and exporting. Examples should be realistic and runnable, written as tool calling patterns showing exact inputs and expected outputs.",
+      "files": [
+        "evals/files/sample-project/src/data_processor.py"
+      ],
+      "expectations": [
+        "A usage examples file was created (markdown or Python)",
+        "Examples show how to initialize DataProcessor with a source directory",
+        "Examples demonstrate loading data from CSV or JSON",
+        "Examples show filtering records (by value or tags)",
+        "Examples show the aggregate method and document EVERY key in its output structure (count, sum, mean, min, max) with example values — not just mentioning the method but showing what each output field contains",
+        "Examples use realistic data values, not placeholder 'foo' or 'bar'",
+        "Examples show error handling with recovery guidance — not just 'errors may occur' but what specific errors happen and what the caller should do (e.g., check processor.errors, handle FileNotFoundError)",
+        "Examples document the exact return types/structures of at least 3 different methods (e.g., load_csv returns int count, filter_by_value returns list of DataRecord, aggregate returns dict with specific keys)"
+      ]
+    }
+  ]
+}

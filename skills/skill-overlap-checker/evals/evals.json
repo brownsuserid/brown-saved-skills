@@ -1,0 +1,43 @@
+{
+  "skill_name": "skill-overlap-checker",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "I want to audit my skill library for overlap. Can you check if any of my skills are redundant or competing for the same triggers? The skills are in /Volumes/Trebleet/DevProjects/bb-ai-sdlc/",
+      "expected_output": "Should run the scan script, identify top overlapping pairs, check cross-references, and produce a structured overlap analysis report",
+      "files": [],
+      "assertions": [
+        {"text": "Runs the scan_skills.py script or manually inventories all skills in the library"},
+        {"text": "Identifies at least 3 pairs of skills with overlapping descriptions or shared territory"},
+        {"text": "Checks cross-references for broken links and finds the dev-testing-live-aws broken references"},
+        {"text": "Produces a structured report with severity levels (critical, warning, info)"},
+        {"text": "Provides actionable recommendations for resolving the highest-priority overlaps"}
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "Does infra-cdk-quality overlap with any of our other skills? I want to make sure it's not duplicating what dev-detecting-antipatterns or dev-creating-deploy-scripts already cover.",
+      "expected_output": "Should do a targeted analysis of infra-cdk-quality against those two skills specifically, identifying shared territory and boundary clarity",
+      "files": [],
+      "assertions": [
+        {"text": "Reads infra-cdk-quality SKILL.md and the two comparison skills"},
+        {"text": "Identifies specific overlap areas between infra-cdk-quality and dev-detecting-antipatterns (both scan for patterns/anti-patterns)"},
+        {"text": "Identifies specific overlap areas between infra-cdk-quality and dev-creating-deploy-scripts (both cover deployment scripts)"},
+        {"text": "Assesses whether boundaries are clear, implicit, or confused for each pair"},
+        {"text": "Recommends specific actions like adding exclusions or cross-references to clarify boundaries"}
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "We just retired the dev-testing-live-aws skill and redistributed its content. Can you check if any skills still reference it and need to be updated?",
+      "expected_output": "Should scan for broken cross-references to dev-testing-live-aws and identify which skills need updating",
+      "files": [],
+      "assertions": [
+        {"text": "Scans all skills for references to dev-testing-live-aws"},
+        {"text": "Identifies infra-cdk-quality and implementing-features as having broken references"},
+        {"text": "Suggests specific replacement references or actions for each broken link"},
+        {"text": "Checks if the redistributed content created any new overlaps with receiving skills"}
+      ]
+    }
+  ]
+}

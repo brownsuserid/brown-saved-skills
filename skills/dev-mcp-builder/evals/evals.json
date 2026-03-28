@@ -1,0 +1,53 @@
+{
+  "skill_name": "dev-mcp-builder",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I want to build an MCP server that wraps the OpenWeatherMap API. It should let AI agents check current weather, get forecasts, and look up weather alerts for any city. Can you help me plan and scaffold this?",
+      "expected_output": "A scaffolded MCP server project with proper directory structure, a detailed implementation plan covering tool design, error handling, and deployment, and initial server.py with tool stubs following FastMCP patterns.",
+      "files": [],
+      "expectations": [
+        "Creates a project directory following the standard MCP server structure (src/, tests/, cdk/)",
+        "Uses the scaffold_project.py script or follows its output structure",
+        "Plans at least 3 tools (current weather, forecast, alerts)",
+        "Includes Pydantic input models with Field constraints",
+        "References or follows MCP best practices for tool naming and descriptions",
+        "Plans error handling for API failures with actionable error messages",
+        "Considers agent context limitations in response design",
+        "Includes ToolAnnotations on tool definitions"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I have an existing Python project that uses FastMCP to serve tools. I need to add a new tool that searches a Jira instance for issues by JQL query, with pagination support. The tool should return results in both JSON and markdown formats. Show me how to implement this properly.",
+      "expected_output": "A well-implemented Jira search tool with pagination, dual format output, proper error handling, and transport-agnostic core logic.",
+      "files": [],
+      "expectations": [
+        "Implements pagination with configurable page size and max results",
+        "Provides both JSON and markdown response formats",
+        "Uses Pydantic BaseModel for input validation",
+        "Separates core tool logic from FastMCP registration (transport-agnostic pattern)",
+        "Includes descriptive docstring that serves as the tool description for agents",
+        "Handles API errors with actionable messages guiding the agent",
+        "Uses ToolAnnotations (readOnlyHint=true for search)",
+        "Considers context budget - doesn't return unbounded results"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "I need to deploy my MCP server to AWS using AgentCore. It's a FastMCP server that currently runs locally via stdio. Walk me through what I need to change and set up for deployment.",
+      "expected_output": "Clear deployment guidance covering server configuration changes, Dockerfile creation, CDK infrastructure setup, and deployment steps for AgentCore Runtime.",
+      "files": [],
+      "expectations": [
+        "Explains adding stateless_http=True to FastMCP constructor",
+        "Provides a Dockerfile exposing 0.0.0.0:8000/mcp",
+        "Covers ECR repository setup for container images",
+        "Describes CfnRuntime registration with AgentCore",
+        "Mentions IAM role configuration with least-privilege permissions",
+        "References the deploy script pattern or agentcore starter toolkit",
+        "Distinguishes between AgentCore Runtime (container) and Gateway (Lambda) paths",
+        "Includes CloudWatch logging setup"
+      ]
+    }
+  ]
+}

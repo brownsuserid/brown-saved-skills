@@ -1,0 +1,19 @@
+# Shared worker source for all three email tracking workers.
+# Deploy individually by overwriting name/database_id.
+#
+# Workers:
+#   personal: gog-email-tracker-personal (D1: a1b7c041-ffdc-4263-8d3d-ce637edd7a3a)
+#   bb:       gog-email-tracker-bb       (D1: f2158921-22eb-4d17-bc11-cc7f0c6bf692)
+#   aitb:     gog-email-tracker-aitb     (D1: 4af2222d-abb4-45c6-bf43-ee4b5590434d)
+#
+# All deployed to: *.aaron-faf.workers.dev
+
+name = "gog-email-tracker-personal"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+workers_dev = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "gog-email-tracker-personal"
+database_id = "a1b7c041-ffdc-4263-8d3d-ce637edd7a3a"

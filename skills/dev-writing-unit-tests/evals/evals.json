@@ -1,0 +1,177 @@
+{
+  "skill_name": "writing-unit-tests",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I've got this PaymentService class in evals/files/eval-1-service-class/src/payment_service.py that handles charges, refunds, and invoice generation. It has three external dependencies (Stripe, a tax calculator, and an email service) that all need mocking. The test file is empty right now. Can you write comprehensive unit tests for it? I want good coverage of process_payment, refund_payment, generate_invoice, and get_payment_history — including the error paths and edge cases. The project uses pytest and pytest-mock.",
+      "expected_output": "Comprehensive test suite with properly mocked dependencies (StripeClient, TaxCalculator, EmailService), AAA pattern throughout, tests for all four methods covering happy path + error cases (inactive user, negative amount, unsupported currency, already refunded, partial refund exceeding total, empty payments, invalid period). Uses fixtures for shared setup, parametrize for validation cases, and verifies mock interactions.",
+      "files": [
+        "evals/files/eval-1-service-class/src/payment_service.py",
+        "evals/files/eval-1-service-class/tests/test_payment_service.py",
+        "evals/files/eval-1-service-class/pyproject.toml"
+      ],
+      "assertions": [
+        {
+          "text": "All three external dependencies (StripeClient, TaxCalculator, EmailService) are mocked via fixtures, not instantiated as real objects",
+          "type": "quality"
+        },
+        {
+          "text": "Tests follow AAA pattern with clear Arrange/Act/Assert separation",
+          "type": "quality"
+        },
+        {
+          "text": "Tests cover all four public methods: process_payment, refund_payment, generate_invoice, get_payment_history",
+          "type": "quality"
+        },
+        {
+          "text": "Error cases are tested: inactive user, non-positive amount, unsupported currency, already-refunded payment, partial refund exceeding total, empty payments list, invalid period dates",
+          "type": "quality"
+        },
+        {
+          "text": "Test names follow descriptive convention: test_[method]_[scenario]_[expected_behavior]",
+          "type": "quality"
+        },
+        {
+          "text": "Mock interactions are verified (e.g., stripe.create_charge called with correct args, email.send_receipt called)",
+          "type": "quality"
+        },
+        {
+          "text": "Parametrize is used where multiple similar validation cases exist (e.g., invalid currencies, invalid amounts)",
+          "type": "quality"
+        },
+        {
+          "text": "No test depends on another test — each test creates its own state via fixtures",
+          "type": "correctness"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "These tests in evals/files/eval-2-flaky-tests/ are driving me crazy. They pass when I run them normally but fail randomly when I run pytest --randomly or when CI runs them in a different order. Sometimes test_get_user fails with a KeyError, sometimes test_create_another_user fails because the ID isn't 2. I think there's some shared state issue but I can't figure it out. The module under test uses a global dictionary as its store. Can you fix these tests so they're properly isolated and reliable?",
+      "expected_output": "Tests are rewritten to use fixtures with proper isolation. The global state (_user_store, _next_id) is reset before each test using the reset_store() function in a fixture. Global variable created_user_id is eliminated. Each test creates its own user data. Meaningless assertions (like assert len >= 0) are replaced with specific checks. Tests pass in any order.",
+      "files": [
+        "evals/files/eval-2-flaky-tests/src/user_manager.py",
+        "evals/files/eval-2-flaky-tests/tests/test_user_manager.py",
+        "evals/files/eval-2-flaky-tests/pyproject.toml"
+      ],
+      "assertions": [
+        {
+          "text": "The agent identified global state (_user_store, _next_id) and shared variable (created_user_id) as root causes of flakiness",
+          "type": "process"
+        },
+        {
+          "text": "A fixture calls reset_store() before each test to ensure clean state",
+          "type": "quality"
+        },
+        {
+          "text": "The global variable created_user_id is completely eliminated — no test relies on state from another test",
+          "type": "quality"
+        },
+        {
+          "text": "The meaningless assertion 'assert len(users) >= 0' is replaced with a specific, verifiable assertion",
+          "type": "quality"
+        },
+        {
+          "text": "Each test that needs a user creates it within the test or via a fixture, not by depending on a prior test",
+          "type": "quality"
+        },
+        {
+          "text": "The hardcoded ID assumption (user id == 2) is removed or replaced with dynamic ID tracking",
+          "type": "quality"
+        },
+        {
+          "text": "Tests pass when run with --randomly flag (verified or discussed)",
+          "type": "correctness"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "I have this ShoppingCart class in evals/files/eval-3-edge-cases/ with discount logic, coupon support, and quantity limits. The existing tests only cover the absolute basics — adding an item and checking the total. I need thorough edge case and boundary value coverage. Think about: what happens with zero-price items, bulk discounts kicking in at exactly the threshold, coupons with min purchase requirements, removing more items than exist, max quantities, the cart total cap. Use parametrize wherever it makes sense.",
+      "expected_output": "Tests cover boundary values (quantity=1 vs threshold=10, max=99), zero-price items, negative price rejection, coupon edge cases (percentage vs fixed, exceeding cart value, expired coupon, min purchase boundary), bulk discount at exactly threshold, partial removal, removal of nonexistent items, cart total cap, empty cart operations. Heavy use of parametrize for related scenarios.",
+      "files": [
+        "evals/files/eval-3-edge-cases/src/shopping_cart.py",
+        "evals/files/eval-3-edge-cases/tests/test_shopping_cart.py",
+        "evals/files/eval-3-edge-cases/pyproject.toml"
+      ],
+      "assertions": [
+        {
+          "text": "Boundary values are tested at exact thresholds: quantity=9 (no discount) vs quantity=10 (bulk discount applies)",
+          "type": "quality"
+        },
+        {
+          "text": "MAX_ITEMS_PER_PRODUCT (99) boundary is tested — adding exactly 99 succeeds, 100 fails",
+          "type": "quality"
+        },
+        {
+          "text": "Both coupon types (percentage and fixed) are tested including edge cases like 100% discount and fixed > cart value",
+          "type": "quality"
+        },
+        {
+          "text": "Error cases use pytest.raises with specific exception types (ValueError, KeyError)",
+          "type": "quality"
+        },
+        {
+          "text": "pytest.mark.parametrize is used for at least 2 test functions with multiple input/output pairs",
+          "type": "quality"
+        },
+        {
+          "text": "Zero-price items are tested (should be allowed since price >= 0)",
+          "type": "quality"
+        },
+        {
+          "text": "Cart operations on empty cart are tested (total=0, is_empty=True, item_count=0)",
+          "type": "quality"
+        },
+        {
+          "text": "Each test creates its own ShoppingCart instance — no shared cart between tests",
+          "type": "correctness"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "I need unit tests for this async NotificationDispatcher in evals/files/eval-4-async-service/. It's got quiet hours logic, per-recipient rate limiting, retry with backoff, and multiple channel dispatch (email, SMS, push). The test file is empty. I want proper async tests with AsyncMock for the channel clients, and I need to test the quiet hours boundary, rate limiting behavior, retry on failure, and batch sending. The project already has pytest-asyncio configured with asyncio_mode=auto.",
+      "expected_output": "Async test suite using @pytest.mark.asyncio and AsyncMock for all three channel clients. Tests quiet hours (inside/outside/critical bypass), rate limiting (under/at/over limit), retry behavior (succeeds on 2nd attempt, exhausts all retries), channel dispatch routing, and batch sending concurrency. Uses fixtures for the dispatcher and mock clients.",
+      "files": [
+        "evals/files/eval-4-async-service/src/notification_dispatcher.py",
+        "evals/files/eval-4-async-service/tests/test_notification_dispatcher.py",
+        "evals/files/eval-4-async-service/pyproject.toml"
+      ],
+      "assertions": [
+        {
+          "text": "All three channel clients (email, sms, push) use AsyncMock, not regular Mock",
+          "type": "quality"
+        },
+        {
+          "text": "Tests use @pytest.mark.asyncio decorator (or rely on auto mode) and async def",
+          "type": "quality"
+        },
+        {
+          "text": "Quiet hours logic is tested: blocked during quiet hours, allowed outside, critical bypasses quiet hours",
+          "type": "quality"
+        },
+        {
+          "text": "Rate limiting is tested: sends succeed under limit, blocked when limit exceeded",
+          "type": "quality"
+        },
+        {
+          "text": "Retry behavior is tested: transient failure followed by success, and exhausting all retries",
+          "type": "quality"
+        },
+        {
+          "text": "Channel routing is tested: email/sms/push notifications dispatch to correct client with correct args",
+          "type": "quality"
+        },
+        {
+          "text": "assert_awaited_once or similar async-aware assertion methods are used to verify mock calls",
+          "type": "quality"
+        },
+        {
+          "text": "Fixtures provide fresh dispatcher and mock clients for each test (no shared state)",
+          "type": "correctness"
+        }
+      ]
+    }
+  ]
+}

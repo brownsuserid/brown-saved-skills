@@ -1,0 +1,38 @@
+# Credentials and secrets
+.credentials.json
+*.secret
+*.key
+
+# Ephemeral / machine-specific
+cache/
+sessions/
+debug/
+file-history/
+shell-snapshots/
+downloads/
+backups/
+stats-cache.json
+history.jsonl
+plugins/
+
+# Project session data (keep memory, skip session logs)
+projects/*/[0-9a-f]*
+projects/*/subagents/
+projects/*/tool-results/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Node
+node_modules/
+
+# Wrangler cache
+.wrangler/

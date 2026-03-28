@@ -1,0 +1,44 @@
+{
+  "skill_name": "infra-cdk-quality",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "I have a CDK Python project with 4 stacks and I keep getting deployment deadlocks. The stateless stack imports a DynamoDB table and S3 bucket from the data stack using L2 constructs. Can you evaluate the CDK quality and help me fix the cross-stack dependency issues?",
+      "expected_output": "Should identify L2 construct cross-stack references as the root cause, recommend plain string patterns, provide specific code examples for migrating from L2 to safe patterns, and outline a step-by-step remediation plan",
+      "files": [],
+      "assertions": [
+        {"text": "Identifies that passing L2 constructs between stacks creates implicit CloudFormation exports"},
+        {"text": "Warns about SSM Parameter Store synthesis-time lookups returning Tokens instead of strings"},
+        {"text": "Provides at least 2 safe cross-stack patterns (config files, plain string ARNs, runtime SSM lookup, or Secrets Manager)"},
+        {"text": "Includes step-by-step migration or remediation strategy with incremental approach"},
+        {"text": "Provides AWS CLI verification commands (list-exports, grep for exports in templates)"}
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "We just finished building our CDK TypeScript infrastructure with an API Gateway, Lambda functions, and a DynamoDB table. Before we merge the PR, can you run a CDK quality check? We haven't set up cdk-nag or any scanning tools yet.",
+      "expected_output": "Should walk through setting up cdk-nag, Checkov, and cfn-lint, run the scans, categorize findings by severity, and provide a prioritized remediation plan using the report template",
+      "files": [],
+      "assertions": [
+        {"text": "Covers all three scanning tools: cdk-nag, Checkov, and cfn-lint"},
+        {"text": "Provides TypeScript code to add AwsSolutionsChecks via CDK Aspects"},
+        {"text": "Shows how to run Checkov against synthesized templates (checkov -d cdk.out/)"},
+        {"text": "Categorizes findings by severity level (Critical, High, Medium, Low or similar)"},
+        {"text": "Includes guidance on suppressing rules with justification (NagSuppressions or .checkov.yaml)"}
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "We're expanding our CDK project to support multiple customers in different AWS accounts. Our deploy.sh is basic - it just runs `cdk deploy --all`. Can you evaluate our deployment setup and help us build a proper multi-customer deployment script?",
+      "expected_output": "Should evaluate the current deploy script against the deployment-scripts reference, identify missing sections, and provide a comprehensive multi-customer deploy.sh",
+      "files": [],
+      "assertions": [
+        {"text": "Identifies gaps in the basic deploy script (missing arg parsing, validation, profile management)"},
+        {"text": "Includes AWS profile management with account-to-profile mapping or automatic switching"},
+        {"text": "Includes pre-deployment validation (configuration checks before running CDK deploy)"},
+        {"text": "Includes post-deployment tasks (Lambda warm-up, health checks, or cleanup)"},
+        {"text": "Script accepts customer and environment parameters via command-line arguments"}
+      ]
+    }
+  ]
+}

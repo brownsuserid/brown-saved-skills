@@ -1,0 +1,137 @@
+{
+  "skill_name": "infra-cloudwatch-investigation",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "We just deployed the campaign creator agent (CampaignCreatorBrain) to dev about 20 minutes ago and it's not creating records in Airtable anymore. It was working before the deploy. I'm using AWS profile PowerUser-398105904466 in us-east-1. Can you check the CloudWatch logs and figure out what's going on?",
+      "expected_output": "Agent identifies the relevant Lambda function names (AITBrainbridgeDevStage-Ag-CampaignCreatorBrainAgen-*), checks multiple log streams, filters litellm noise, checks the MCP create Lambda (bb-os-mcp-at-create-dev) to see if it was even invoked, cross-correlates timestamps between the agent Lambda and the MCP Lambda, checks REPORT lines for metrics, and produces a structured investigation report with root cause and recommendation.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Agent identifies and checks the CampaignCreatorBrain Lambda log group (AITBrainbridgeDevStage pattern) using describe-log-groups or the reference naming conventions",
+          "type": "process"
+        },
+        {
+          "text": "Agent checks at least 2 recent log streams, not just the most recent one",
+          "type": "process"
+        },
+        {
+          "text": "Agent filters or acknowledges litellm LoggingWorker noise rather than reporting it as the error",
+          "type": "quality"
+        },
+        {
+          "text": "Agent checks the MCP Airtable create Lambda (bb-os-mcp-at-create-dev) to determine if it was invoked",
+          "type": "process"
+        },
+        {
+          "text": "Agent cross-correlates timestamps between the agent Lambda and MCP Lambda to trace the request flow",
+          "type": "quality"
+        },
+        {
+          "text": "Agent checks Lambda REPORT lines for duration, memory, and cold start metrics",
+          "type": "quality"
+        },
+        {
+          "text": "Agent produces a structured investigation output with clear root cause and recommendation",
+          "type": "quality"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "The outreach manager step function hasn't run any executions today even though it should have been triggered by the daily scheduler. Profile is PowerUser-398105904466, region us-east-1. The step function name has 'outreach' in it somewhere. Can you investigate why it's not firing?",
+      "expected_output": "Agent finds the Step Function by searching for 'outreach' pattern, confirms zero executions, then investigates upstream — checks the triggering Lambda/EventBridge rule, verifies the state machine is ACTIVE, checks IAM permissions (states:StartExecution), and checks the triggering Lambda logs for any StartExecution call attempts. Produces a structured report with findings.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Agent discovers the Step Function ARN by searching for 'outreach' pattern using list-state-machines or describe-log-groups",
+          "type": "process"
+        },
+        {
+          "text": "Agent confirms zero executions using list-executions and treats this as a key finding",
+          "type": "process"
+        },
+        {
+          "text": "Agent investigates the upstream trigger (EventBridge rule, triggering Lambda, or scheduler) to find why the Step Function wasn't started",
+          "type": "quality"
+        },
+        {
+          "text": "Agent checks whether the state machine is ACTIVE using describe-state-machine",
+          "type": "process"
+        },
+        {
+          "text": "Agent checks IAM permissions or the triggering Lambda's logs for states:StartExecution calls",
+          "type": "quality"
+        },
+        {
+          "text": "Agent produces a clear conclusion about why the Step Function wasn't triggered, not just confirming it didn't run",
+          "type": "quality"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Our main Brainy agent (dev-bb-ait) has been intermittently timing out over the past few hours. Sometimes it works fine, sometimes it hits the 600s timeout. Users are complaining. I need to understand the pattern — is it getting worse? Is it related to specific operations? AWS profile PowerUser-398105904466, us-east-1.",
+      "expected_output": "Agent uses CloudWatch Insights to aggregate timeout occurrences over time (not just look at individual entries), analyzes REPORT lines to show duration distribution, checks for patterns (specific tool calls, high token counts indicating agent loops, memory growth). Produces a report with error rate trends, identifies whether the issue is worsening, and recommends specific fixes.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Agent uses CloudWatch Insights (start-query) or equivalent aggregation to count timeouts over time, not just individual log entries",
+          "type": "quality"
+        },
+        {
+          "text": "Agent analyzes REPORT line Duration values to identify the distribution — how many are near the 600s limit vs normal",
+          "type": "quality"
+        },
+        {
+          "text": "Agent checks for agent looping patterns (many LLM calls with low tokens per call)",
+          "type": "quality"
+        },
+        {
+          "text": "Agent provides a trend analysis — is the problem getting worse, stable, or improving over the time period",
+          "type": "quality"
+        },
+        {
+          "text": "Agent filters litellm noise and focuses on actual errors and timeout indicators",
+          "type": "quality"
+        },
+        {
+          "text": "Agent provides specific, actionable recommendations (not generic advice like 'increase timeout')",
+          "type": "quality"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "I just updated the OAuth credentials in Secrets Manager for the Google Mail integration (bb-gtm-brain-bridge-dev-comm-send-google-mail) but the Lambda is still using the old token. It keeps returning 'invalid_grant' errors. Profile PowerUser-398105904466, us-east-1. How do I fix this?",
+      "expected_output": "Agent recognizes this as the credential caching issue (Recipe 5 from the reference). Checks the Lambda logs to confirm the invalid_grant error, verifies the secret has the correct structure, explains that warm Lambda containers cache credentials from cold start, and walks through the fix: force a cold start by updating an environment variable, wait for propagation, then re-invoke.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Agent identifies this as the warm Lambda credential caching issue, not a Secrets Manager problem",
+          "type": "quality"
+        },
+        {
+          "text": "Agent checks the Lambda logs to confirm the invalid_grant error is present",
+          "type": "process"
+        },
+        {
+          "text": "Agent verifies the secret structure in Secrets Manager (get-secret-value) to confirm the new credentials are there",
+          "type": "process"
+        },
+        {
+          "text": "Agent provides the cold start force fix (update-function-configuration with CACHE_BUST or similar env var change)",
+          "type": "quality"
+        },
+        {
+          "text": "Agent waits for the update to propagate (lambda wait function-updated) before declaring the fix complete",
+          "type": "quality"
+        },
+        {
+          "text": "Agent explains why this happens (warm containers cache, updating secret doesn't force re-read) so the user understands the root cause",
+          "type": "quality"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+---
+name: My Top Tasks
+windows:
+  - tabs:
+      - title: tasks
+        layout:
+          cwd: /Users/aaroneden/.openclaw
+          commands:
+            - exec: >-
+                cc
+                "Fetch my top tasks using python3
+                ~/.openclaw/skills/managing-projects/scripts/generating-morning-briefing/gather_top_tasks.py
+                --assignee aaron --max 15.
+                Present as a markdown table with columns: #, Task, Launch, Status, Base, Score.
+                The Task column has the plain text task title.
+                The Launch column has a short markdown link: [Go](http://localhost:19280/task/URL+Encoded+Task+Title) where spaces are encoded as +.
+                Example row: | 1 | Create AI Finance Teammate | [Go](http://localhost:19280/task/Create+AI+Finance+Teammate) | In Progress | BB | 85 |"

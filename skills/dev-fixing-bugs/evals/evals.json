@@ -1,0 +1,87 @@
+{
+  "skill_name": "fixing-bugs",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I'm getting a KeyError when processing some user records from our external API. Not all users have the same fields — some are missing 'contact' or 'role' sub-objects. The code is in evals/files/eval-1-keyerror-bug/. The existing tests pass fine, but the function blows up on real API data where some users have incomplete profiles. Can you figure out the root cause and fix it?",
+      "expected_output": "Root cause identified as missing defensive checks for optional nested keys in process_user_batch. Fix adds handling for missing 'contact' and 'role' sub-objects. Tests added that cover the missing-field scenarios. All existing tests still pass.",
+      "files": [
+        "evals/files/eval-1-keyerror-bug/src/user_processor.py",
+        "evals/files/eval-1-keyerror-bug/tests/test_user_processor.py",
+        "evals/files/eval-1-keyerror-bug/pyproject.toml"
+      ],
+      "expectations": [
+        "The agent identified that the root cause is missing key/field validation in process_user_batch for optional nested fields like 'contact' and 'role'",
+        "The agent generated at least 2 hypotheses before settling on a root cause",
+        "The fix handles users with missing 'contact' or 'role' sub-objects without crashing",
+        "New tests were added that specifically test missing/incomplete user fields",
+        "All pre-existing tests still pass after the fix",
+        "The agent presented hypotheses and asked for confirmation before implementing the fix",
+        "After fixing, the agent presented a summary explaining the root cause, what was changed, and why"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "My tests pass when I run them individually but fail when I run the full test suite together. The project is in evals/files/eval-2-test-pollution/. Running `pytest tests/test_config_manager.py` gives failures in test_api_defaults_without_env and test_returns_none_when_not_cached. But running each test class alone works fine. What's going on?",
+      "expected_output": "Root cause identified as test pollution: test_api_config_from_env sets environment variables that aren't cleaned up, and load_config populates a module-level _config_cache that persists across tests. Fix adds proper teardown/fixtures to isolate tests. All tests pass when run together.",
+      "files": [
+        "evals/files/eval-2-test-pollution/src/config_manager.py",
+        "evals/files/eval-2-test-pollution/tests/test_config_manager.py",
+        "evals/files/eval-2-test-pollution/pyproject.toml"
+      ],
+      "expectations": [
+        "The agent identified environment variable pollution from test_api_config_from_env as a root cause",
+        "The agent identified module-level _config_cache pollution as a root cause",
+        "The fix adds proper test isolation (fixtures, setup/teardown, or monkeypatch) to clean up shared state",
+        "All tests pass when run together after the fix, not just individually",
+        "The agent traced the test execution order to understand the pollution chain",
+        "The agent presented hypotheses and asked for confirmation before implementing the fix",
+        "After fixing, the agent presented a summary explaining the root cause, what was changed, and why"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Our paginator is losing items. When I paginate a list of 25 items with page_size=10, iter_all_pages only returns 20 items — the last 5 are missing. The code is in evals/files/eval-3-off-by-one/. Can you track down the bug and fix it?",
+      "expected_output": "Root cause identified as off-by-one error in total_pages calculation: integer division (25 // 10 = 2) drops the remainder page. Fix uses math.ceil or equivalent to correctly compute total_pages=3 for 25 items. Tests added for non-exact-multiple cases. All tests pass.",
+      "files": [
+        "evals/files/eval-3-off-by-one/src/paginator.py",
+        "evals/files/eval-3-off-by-one/tests/test_paginator.py",
+        "evals/files/eval-3-off-by-one/pyproject.toml"
+      ],
+      "expectations": [
+        "The agent identified the root cause as integer division truncation in total_pages calculation (25 // 10 = 2 instead of 3)",
+        "The fix correctly computes total_pages using math.ceil or equivalent ceiling division",
+        "New tests were added for non-exact-multiple cases (e.g., 25 items with page_size=10 should yield 3 pages)",
+        "iter_all_pages now returns all 25 items across 3 pages, not just 20",
+        "All pre-existing tests still pass after the fix",
+        "The agent presented hypotheses and asked for confirmation before implementing the fix",
+        "After fixing, the agent presented a summary explaining the root cause, what was changed, and why"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Our order processing pipeline is failing when generating reports. The test_process_and_report test fails with `ValueError: Invalid shipping tier label '1-3.0': expected format 'N-M' with integers`. The error is in report.py's validation, but I'm not sure if that's where the real problem is. The code is in evals/files/eval-4-distant-root-cause/. There are 4 modules: order_parser.py, pricing.py, shipping.py, and report.py, wired together in order_pipeline.py. Can you trace through the pipeline and find the actual root cause?",
+      "expected_output": "Root cause traced from report.py (symptom) back through shipping.py (tier label formatting) to order_parser.py (float conversion). The root cause is order_parser.py using float() instead of int() for quantity, which propagates through pricing and shipping as floats, eventually producing '1-3.0' tier labels. Fix changes float() to int() in order_parser.py. A symptom-only fix in shipping.py (casting to int in the f-string) would be insufficient.",
+      "files": [
+        "evals/files/eval-4-distant-root-cause/src/order_parser.py",
+        "evals/files/eval-4-distant-root-cause/src/pricing.py",
+        "evals/files/eval-4-distant-root-cause/src/shipping.py",
+        "evals/files/eval-4-distant-root-cause/src/report.py",
+        "evals/files/eval-4-distant-root-cause/src/order_pipeline.py",
+        "evals/files/eval-4-distant-root-cause/tests/test_order_pipeline.py",
+        "evals/files/eval-4-distant-root-cause/pyproject.toml"
+      ],
+      "expectations": [
+        "The agent traced the bug from report.py (where the error is raised) back to order_parser.py (where float() should be int())",
+        "The agent identified order_parser.py's float() conversion as the root cause, not shipping.py's tier label formatting",
+        "The fix changes float(row['quantity']) to int(row['quantity']) in order_parser.py, not just patching the symptom in shipping.py",
+        "The agent explained the complete chain: order_parser (float qty) -> pricing (float propagates) -> shipping (float in tier label) -> report (validation fails)",
+        "The agent applied the root cause verification tests (origin, sufficiency, explanation) or equivalent reasoning",
+        "New tests were added that verify quantity is parsed as int, not float",
+        "The test_process_and_report test passes after the fix",
+        "The agent presented hypotheses and asked for confirmation before implementing the fix",
+        "After fixing, the agent presented a summary explaining the root cause, the complete propagation chain (order_parser -> pricing -> shipping -> report), what was changed, and why"
+      ]
+    }
+  ]
+}
