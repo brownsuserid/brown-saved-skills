@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "C:/Users/jtand/.claude/hooks/check-email-dashes.sh",
+            "command": "C:/Users/Brown/.claude/hooks/check-email-dashes.sh",
             "timeout": 5
           }
         ]
@@ -18,12 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "C:/Users/jtand/bin/python_lint_improved"
-          },
-          {
-            "type": "command",
-            "command": "C:/Users/jtand/.claude/hooks/skill-crud-sync.sh",
-            "timeout": 10
+            "command": "C:/Users/Brown/bin/python_lint_improved"
           }
         ]
       },
@@ -32,12 +27,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "C:/Users/jtand/bin/python_lint_improved"
-          },
-          {
-            "type": "command",
-            "command": "C:/Users/jtand/.claude/hooks/skill-crud-sync.sh",
-            "timeout": 10
+            "command": "C:/Users/Brown/bin/python_lint_improved"
           }
         ]
       },
@@ -46,24 +36,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "C:/Users/jtand/bin/python_lint_improved"
-          },
-          {
-            "type": "command",
-            "command": "C:/Users/jtand/.claude/hooks/skill-crud-sync.sh",
-            "timeout": 10
-          }
-        ]
-      }
-    ],
-    "SessionStart": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "C:/Users/jtand/.claude/hooks/session-start-sync.sh",
-            "timeout": 15
+            "command": "C:/Users/Brown/bin/python_lint_improved"
           }
         ]
       }
@@ -74,7 +47,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "C:/Users/jtand/bin/python_quality_check"
+            "command": "C:/Users/Brown/bin/python_quality_check"
           }
         ]
       }
