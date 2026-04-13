@@ -3,7 +3,8 @@
 ## Critical Rules
 
 - **NEVER send an email without explicit written permission from Josh in the chat.** Drafting is fine, but sending requires Josh to clearly say "send it" or equivalent. "Do it" in response to a draft means finalize the draft, NOT send it. When in doubt, ask. Do not send.
-- **NEVER use em dashes in email drafts.** No en dashes or em dashes. Use periods, commas, or rewrite the sentence instead.
+- **NEVER use dashes of ANY kind in emails.** No em dashes, en dashes, double dashes (--), or single hyphens used as dashes. Use periods, commas, or rewrite the sentence instead. Compound words with hyphens (e.g., "follow-up") are fine.
+- **ALL emails must have proper newlines/blank lines between paragraphs.** No wall-of-text formatting. Every paragraph must be separated by a blank line with hard returns.
 - **ALWAYS show Josh the draft text in chat BEFORE creating it in Gmail drafts.** Wait for his approval or edits, then save to drafts.
 - **When archiving emails, remove ALL inbox-related labels:** INBOX, Check-Brown, Urgent-Brown, and Read-Brown. Do not add any labels. Do not modify non-inbox labels.
 - **NEVER remove anyone from CC or BCC.** If someone is on the thread, they stay on the thread. Only ADD a CC when specifically called for (e.g., adding Brainy). Never subtract.
@@ -66,3 +67,6 @@ When Josh asks to create a deal:
 - [Josh Brown CEO Profile](user_josh_profile.md) - role, team, key contacts, communication style
 - [Email Triage & Auto-Draft Rules](feedback_email_triage_rules.md) - auto-draft behavior, batch processing, GTM handling, command vocabulary
 - [Triage Pagination Rule](feedback_triage_pagination.md) - MUST paginate all inbox search results to avoid missing older emails
+
+## Contact Routing
+- [Kirsten Iversen → Aaron Eden](feedback_kirsten_iversen_aaron.md) - All Kirsten Iversen tasks/campaigns assigned to Aaron, not Josh
