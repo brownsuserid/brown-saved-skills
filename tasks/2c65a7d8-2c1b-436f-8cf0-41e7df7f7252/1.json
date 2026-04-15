@@ -1,0 +1,9 @@
+{
+  "id": "1",
+  "subject": "Phase 0: Today's Agenda Briefing",
+  "description": "Present today's meetings with attendee context",
+  "activeForm": "Building today's agenda",
+  "status": "completed",
+  "blocks": [],
+  "blockedBy": []
+}

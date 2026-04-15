@@ -1,0 +1,9 @@
+{
+  "id": "3",
+  "subject": "Phases 2-4: Classify, Cluster & Present Dashboard",
+  "description": "Enrich emails with CRM/history context, cluster into batches, present triage dashboard",
+  "activeForm": "Building triage dashboard",
+  "status": "in_progress",
+  "blocks": [],
+  "blockedBy": []
+}

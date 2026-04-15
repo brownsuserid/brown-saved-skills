@@ -1,0 +1,9 @@
+{
+  "id": "2",
+  "subject": "Phase 1: Fetch, Filter & Identify Noise",
+  "description": "Pull all inbox labels, deduplicate, identify noise emails for approval",
+  "activeForm": "Filtering inbox",
+  "status": "completed",
+  "blocks": [],
+  "blockedBy": []
+}

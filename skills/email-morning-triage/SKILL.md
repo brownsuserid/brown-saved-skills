@@ -18,6 +18,25 @@ description: >
 
 **This system exists because deals die from cognitive overload, not from bad emails.** Every email should arrive with a recommendation and, where possible, a ready draft. If Josh has to think about what to do with an email, the system failed. Optimize for maximum impact in minimum time.
 
+## UNIVERSAL ARCHIVE RULE (MANDATORY)
+
+**Every time a message is archived during triage, regardless of which phase or which command triggered the archive, ALL four inbox labels MUST be removed in a single `gmail_modify_labels` call:**
+
+- `INBOX`
+- `Label_3884176123759987561` (Check Brown)
+- `Label_4977808787076738220` (Read Brown)
+- `Label_8057477445084827980` (Urgent Brown)
+
+Remove all four every time, unconditionally. Do not inspect which labels are currently on the message and do not "only remove what's there." Pass all four IDs in `remove_labels` on every archive action. Gmail silently ignores removals for labels that aren't attached, so this is safe and idempotent.
+
+This applies to:
+- Phase 1.2 noise archival
+- Any `archive [letter]` or `archive [#]` command during batch processing
+- Deep-search sweeps (Phase 7 dropped-ball scan dismissals)
+- Any other archive action taken during the triage session
+
+The goal: an archived email must never reappear in a future triage because one of the secondary labels was overlooked.
+
 ## Trigger
 
 Use when Josh says any of: "triage", "process inbox", "morning email", "afternoon email", "check my email", "email triage", "let's do email", "what's on today", "today's agenda", "set priorities", "what should I focus on", or any variation requesting inbox processing, meeting prep, or daily priority setting.
