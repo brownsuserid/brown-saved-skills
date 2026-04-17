@@ -1,0 +1,623 @@
+default_dirs:
+  skills:
+    - default: .claude/skills/
+    - global: ~/.claude/skills/
+  agents:
+    - default: .claude/agents/
+    - global: ~/.claude/agents/
+  prompts:
+    - default: .claude/commands/
+    - global: ~/.claude/commands/
+
+library:
+  mcps:
+    - name: playwright
+      description: Browser automation via Playwright — headless Chrome control for web scraping, form filling, screenshots
+      type: stdio
+      command: npx
+      args: ["@playwright/mcp@latest"]
+
+    - name: beeper
+      description: Unified messaging via Beeper Desktop — iMessage, WhatsApp, Signal, Telegram, Discord, Slack, etc.
+      type: http
+      url: "http://localhost:23373/v0/mcp"
+      note: Requires Beeper Desktop running with API enabled (Settings → Developers)
+
+  skills:
+    # --- Core Library (Brain-Bridge-AI/core-library) ---
+    - name: airtable-config
+      description: Config-driven Airtable loader — YAML configs, helpers (api_url, resolve_assignee, resolve_status)
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/airtable-config/README.md
+
+    - name: calendar-availability
+      description: Calendar availability engine — finds open slots across Google and Apple calendars
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/calendar-availability/README.md
+
+    - name: search-airtable
+      description: Generic Airtable search engines (orgs, contacts, deals) — config-driven
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/search-airtable/README.md
+
+    - name: using-gamma
+      description: Generate presentations via Gamma API with Playwright automation
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/using-gamma/SKILL.md
+      requires: [mcp:playwright]
+
+    - name: using-gog
+      description: Config-driven Google Workspace CLI engine (gog v0.9.0) — Gmail, Calendar, Drive, Docs, Sheets, and more
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/using-gog/SKILL.md
+
+    - name: using-notebooklm
+      description: Browser automation for Google NotebookLM — query notebooks, generate audio overviews
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/using-notebooklm/SKILL.md
+      requires: [mcp:playwright]
+
+    - name: using-beeper
+      description: Beeper Desktop MCP wrappers for unified messaging (read, send, find, write)
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/using-beeper/reference.md
+      requires: [mcp:beeper]
+
+    - name: coordinating-meeting-times
+      description: Templates and orchestration for back-and-forth meeting scheduling
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/coordinating-meeting-times/reference.md
+
+    - name: sending-meeting-invitations
+      description: Best practices and templates for meeting invitations
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/sending-meeting-invitations/reference.md
+
+    - name: generating-podcast
+      description: Browser automation for NotebookLM podcast generation from weekly digest
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/generating-podcast/reference.md
+      requires: [mcp:playwright, skill:using-notebooklm]
+
+    - name: drafting-blog-posts
+      description: Blog post drafting via Quill agent — interview, outline, 3 versions
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/drafting-blog-posts/reference.md
+
+    - name: creating-tasks
+      description: Create Airtable tasks with proper field mapping and validation
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/creating-tasks/reference.md
+      requires: [skill:airtable-config]
+
+    - name: creating-projects
+      description: Create Airtable projects/rocks — manual or from YAML+Jinja2 templates (e.g., solo onboarding). Works across all 3 bases.
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/creating-projects/reference.md
+      requires: [skill:airtable-config]
+
+    - name: searching-meeting-transcripts
+      description: Search Google Meet transcripts across drives using gog CLI
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/searching-meeting-transcripts/reference.md
+      requires: [skill:using-gog]
+
+    - name: reviewing-meeting-quality
+      description: Weekly meeting quality review using gog CLI calendar data
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/reviewing-meeting-quality/reference.md
+      requires: [skill:using-gog]
+
+    - name: preparing-for-meetings
+      description: Auto-gather context ~1hr before meetings
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/preparing-for-meetings/reference.md
+
+    - name: scoring-content
+      description: Score ingested content items against interest profile
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/scoring-content/reference.md
+
+    - name: ingesting-gmail-digests
+      description: Pull digest-labeled emails and extract articles using gog CLI
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/ingesting-gmail-digests/reference.md
+      requires: [skill:using-gog]
+
+    - name: managing-outreach
+      description: List-based event outreach with contact gathering, spreadsheet updates, and follow-ups
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/managing-outreach/reference.md
+      requires: [mcp:beeper]
+
+    - name: monitoring-job-listings
+      description: Config-driven job search — search boards, score listings, generate digest
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/monitoring-job-listings/reference.md
+      requires: [mcp:playwright]
+
+    - name: tracking-website-analytics
+      description: Config-driven GA4 + Search Console analytics for any website
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/tracking-website-analytics/reference.md
+      requires: [mcp:playwright]
+
+    - name: check-ai-usage
+      description: Check Claude Code and Antigravity IDE usage limits
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/check-ai-usage/reference.md
+
+    - name: scraping-linkedin-metrics
+      description: Playwright-guided LinkedIn metrics scraping for personal and company profiles
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/scraping-linkedin-metrics/reference.md
+      requires: [mcp:playwright]
+
+    - name: email-style-guide
+      description: Generic email voice/tone reference framework — each user defines their own style
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/email-style-guide/reference.md
+
+    - name: regenerating-recurring-tasks
+      description: Auto-spawn fresh instances of completed recurring tasks
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/regenerating-recurring-tasks/reference.md
+
+    - name: auditing-task-quality
+      description: Task quality analysis and skill gap assessment
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/auditing-task-quality/reference.md
+
+    - name: skill-creator
+      description: Create, edit, evaluate, and benchmark Claude Code skills with eval suites and variance analysis
+      source: https://github.com/Brain-Bridge-AI/ai-sdlc/blob/main/skill-creator/SKILL.md
+
+    - name: executing-tasks
+      description: Airtable task CRUD — create, search, update, get tasks + create projects/rocks
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/executing-tasks/reference.md
+      requires: [skill:airtable-config]
+
+    - name: routing-airtable-tasks
+      description: Query projects and goals across Airtable bases for task routing
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/routing-airtable-tasks/reference.md
+      requires: [skill:airtable-config]
+
+    - name: airtable-inbox-review
+      description: Fetch and classify inbox tasks from Airtable bases
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/airtable-inbox-review/reference.md
+      requires: [skill:airtable-config]
+
+    - name: generating-morning-briefing
+      description: Gather top tasks, calendar events, and for-today items for daily briefing
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/generating-morning-briefing/reference.md
+      requires: [skill:airtable-config, skill:executing-tasks]
+
+    - name: setting-todays-priorities
+      description: Fetch and set For Today flags on Airtable tasks
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/setting-todays-priorities/reference.md
+      requires: [skill:airtable-config, skill:executing-tasks]
+
+    - name: monthly-planning
+      description: Monthly goal mountains — gather data, create/update mountains
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/monthly-planning/reference.md
+      requires: [skill:airtable-config]
+
+    - name: annual-planning
+      description: Annual objectives — gather data, create/update objectives across bases
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/annual-planning/reference.md
+      requires: [skill:airtable-config]
+
+    - name: setting-up-weekly-rocks
+      description: Roll project tasks forward for weekly rock setup
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/setting-up-weekly-rocks/reference.md
+      requires: [skill:airtable-config]
+
+    - name: drafting-pr-faqs
+      description: Gather roadmap context from Airtable for PR-FAQ drafting
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/drafting-pr-faqs/reference.md
+      requires: [skill:airtable-config]
+
+    - name: looking-up-contacts
+      description: Search contacts across Airtable bases
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/looking-up-contacts/reference.md
+      requires: [skill:airtable-config]
+
+    - name: looking-up-deals
+      description: Search deals across Airtable bases
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/looking-up-deals/reference.md
+      requires: [skill:airtable-config]
+
+    - name: updating-contacts
+      description: Update contact records in Airtable
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/updating-contacts/reference.md
+      requires: [skill:airtable-config]
+
+    - name: updating-deals
+      description: Update deal records in Airtable
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/updating-deals/reference.md
+      requires: [skill:airtable-config]
+
+    - name: updating-orgs
+      description: Update organization records in Airtable
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/updating-orgs/reference.md
+      requires: [skill:airtable-config]
+
+    - name: sales-deal-review
+      description: Gather open deals and generate pipeline review reports
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/sales-deal-review/reference.md
+      requires: [skill:airtable-config]
+
+    - name: managing-sales-followups
+      description: Scan for stale follow-ups and enrich with deal/contact context
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/managing-sales-followups/reference.md
+      requires: [skill:airtable-config]
+
+    - name: cleanup-duplicate-deals
+      description: Detect and merge duplicate deal records in Airtable
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/cleanup-duplicate-deals/reference.md
+      requires: [skill:airtable-config]
+
+    - name: maintaining-sops
+      description: Standard operating procedures management — view, update, and maintain SOPs
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/maintaining-sops/reference.md
+
+    - name: airtable-field-reference
+      description: Airtable field mappings and status values per base — BB, AITB, Personal
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/airtable-field-reference/reference.md
+
+    - name: sending-meeting-confirmations
+      description: Daily automated meeting confirmation emails — gathers external meetings, checks state, sends reminders 2-24hrs before
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/sending-meeting-confirmations/SKILL.md
+      requires: [skill:using-gog]
+
+    - name: launching-tasks
+      description: Launch Airtable tasks in browser via Pablo localhost URL — config-driven task launcher for daily work queues
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/launching-tasks/SKILL.md
+      requires: [skill:airtable-config]
+
+    - name: extracting-youtube-transcripts
+      description: Extract YouTube video transcripts via yt-dlp for content scoring and digests
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/extracting-youtube-transcripts/reference.md
+
+    - name: using-playwright-mcp
+      description: Playwright MCP reference — CDP connection to existing Chrome, browser automation patterns
+      source: https://github.com/Brain-Bridge-AI/core-library/blob/main/skills/using-playwright-mcp/reference.md
+      requires: [mcp:playwright]
+
+    # --- AITB Library (ai-trailblazers/aitb-library) ---
+    - name: finding-calendar-availability-aitb
+      description: Find available meeting slots on AITB Google Calendar
+      source: https://github.com/ai-trailblazers/aitb-library/blob/main/skills/finding-calendar-availability/reference.md
+      requires: [skill:calendar-availability]
+
+    - name: using-gog-aitb
+      description: Google Workspace CLI scoped to AITB account only
+      source: https://github.com/ai-trailblazers/aitb-library/blob/main/skills/using-gog/configs/aitb.yaml
+      requires: [skill:using-gog]
+
+    - name: looking-up-organizations-aitb
+      description: Search organizations in AITB Airtable base
+      source: https://github.com/ai-trailblazers/aitb-library/blob/main/skills/looking-up-organizations/reference.md
+      requires: [skill:search-airtable]
+
+    - name: planning-aitb-events
+      description: AITB event planning checklist and templates
+      source: https://github.com/ai-trailblazers/aitb-library/blob/main/skills/planning-aitb-events/reference.md
+
+    - name: aitb-groupsio
+      description: Manage AI Trailblazers Groups.io mailing list with gog + Playwright
+      source: https://github.com/ai-trailblazers/aitb-library/blob/main/skills/aitb-groupsio/reference.md
+      requires: [skill:using-gog, mcp:playwright]
+
+    - name: maintaining-relationships-aitb
+      description: AITB-scoped relationship management router — contacts, deals, outreach, meetings
+      source: https://github.com/ai-trailblazers/aitb-library/blob/main/skills/maintaining-relationships-aitb/SKILL.md
+      requires: [mcp:playwright, mcp:beeper]
+
+    - name: managing-finances-aitb
+      description: AITB-scoped financial management router — deal review, follow-ups, pitch decks
+      source: https://github.com/ai-trailblazers/aitb-library/blob/main/skills/managing-finances-aitb/SKILL.md
+
+    - name: managing-projects-aitb
+      description: AITB-scoped project management router — tasks, inbox, priorities, planning
+      source: https://github.com/ai-trailblazers/aitb-library/blob/main/skills/managing-projects-aitb/SKILL.md
+
+    - name: applying-for-grants
+      description: Evaluate grant opportunities and draft grant applications for AITB. Use for grant evaluation, scoring, RFPs, LOIs, funding opportunities, "should we apply", or drafting any grant application. Covers both evaluation (7-criteria weighted scoring) and guided HITL drafting.
+      source: https://github.com/ai-trailblazers/aitb-library/blob/main/skills/applying-for-grants/SKILL.md
+
+    - name: aitb-event-promotion
+      description: AITB event promotion — partner outreach, SciTech calendar submission, social media posting
+      source: https://github.com/ai-trailblazers/aitb-library/blob/main/skills/aitb-event-promotion/reference.md
+      requires: [mcp:playwright]
+
+    - name: welcoming-meetup-members
+      description: Welcome new AI Trailblazers meetup members with personalized messages
+      source: https://github.com/ai-trailblazers/aitb-library/blob/main/skills/welcoming-meetup-members/reference.md
+      requires: [mcp:playwright]
+
+    # --- BB Library (Brain-Bridge-AI/bb-library) ---
+    - name: associating-deals-with-campaigns
+      description: LLM-based campaign routing for orphaned BB deals — enriches with activity logs, contacts, orgs, then subagents recommend matches batch by batch
+      source: https://github.com/Brain-Bridge-AI/bb-library/blob/main/skills/associating-deals-with-campaigns/SKILL.md
+      requires: [skill:airtable-config]
+
+    - name: looking-up-organizations-bb
+      description: Search organizations in Brain Bridge Airtable base
+      source: https://github.com/Brain-Bridge-AI/bb-library/blob/main/skills/looking-up-organizations/reference.md
+      requires: [skill:search-airtable]
+
+    - name: bb-email-approaches
+      description: Five outreach approach frameworks with selection guide and objection handling
+      source: https://github.com/Brain-Bridge-AI/bb-library/blob/main/skills/bb-email-approaches/reference.md
+
+    - name: bb-case-studies
+      description: Anonymized case studies and proof points for sales conversations
+      source: https://github.com/Brain-Bridge-AI/bb-library/blob/main/skills/bb-case-studies/reference.md
+
+    - name: generating-pitch-decks
+      description: Gather deal context and generate proposals via Claude API + Google Docs
+      source: https://github.com/Brain-Bridge-AI/bb-library/blob/main/skills/generating-pitch-decks/reference.md
+      requires: [skill:airtable-config]
+
+    - name: researching-speaking-opportunities
+      description: Create speaking opportunity deals and fetch upcoming trips from TripIt
+      source: https://github.com/Brain-Bridge-AI/bb-library/blob/main/skills/researching-speaking-opportunities/reference.md
+      requires: [skill:airtable-config]
+
+    - name: creating-campaigns
+      description: Interactive 5-stage GTM campaign creation — plan authoring, Apollo lead discovery, Airtable record creation, and launch
+      source: https://github.com/Brain-Bridge-AI/bb-library/blob/main/skills/creating-campaigns/SKILL.md
+
+    - name: planning-outreach
+      description: Per-deal outreach planning — enrichment, 8-section plan creation, task management with authority levels
+      source: https://github.com/Brain-Bridge-AI/bb-library/blob/main/skills/planning-outreach/SKILL.md
+
+    - name: managing-ar-collections
+      description: AR collections for Brain Bridge — QBO MCP invoicing, token billing, Taylor Morgan persona, 7/14/30 day follow-up escalation from billing@brainbridge.app
+      source: https://github.com/Brain-Bridge-AI/bb-library/blob/main/skills/managing-ar-collections/SKILL.md
+      requires: [skill:airtable-config, skill:email-style-guide, skill:looking-up-contacts]
+
+    - name: maintaining-relationships-bb
+      description: BB-scoped relationship management router — contacts, deals, outreach, meetings
+      source: https://github.com/Brain-Bridge-AI/bb-library/blob/main/skills/maintaining-relationships-bb/SKILL.md
+      requires: [mcp:playwright, mcp:beeper]
+
+    - name: managing-finances-bb
+      description: BB-scoped financial management router — deal review, follow-ups, pitch decks
+      source: https://github.com/Brain-Bridge-AI/bb-library/blob/main/skills/managing-finances-bb/SKILL.md
+
+    - name: managing-projects-bb
+      description: BB-scoped project management router — tasks, inbox, priorities, planning
+      source: https://github.com/Brain-Bridge-AI/bb-library/blob/main/skills/managing-projects-bb/SKILL.md
+
+    - name: product-management
+      description: Product management frameworks — CPS Zooms (Customer/Problem/Solution), positioning exercises, ICP deep dives. Moves the Needle framework.
+      source: https://github.com/Brain-Bridge-AI/bb-library/blob/main/skills/product-management/SKILL.md
+
+    # --- AI SDLC (Brain-Bridge-AI/ai-sdlc) — BB developer skills ---
+    - name: dev-changelog-generator
+      description: Generate user-facing changelogs from git commit history
+      source: https://github.com/Brain-Bridge-AI/ai-sdlc/blob/main/dev-changelog-generator/SKILL.md
+
+    - name: dev-documenting
+      description: Create and update project documentation — READMEs, docstrings, API docs
+      source: https://github.com/Brain-Bridge-AI/ai-sdlc/blob/main/dev-documenting/SKILL.md
+
+    - name: dev-fixing-bugs
+      description: Test-driven bug diagnosis and resolution workflow
+      source: https://github.com/Brain-Bridge-AI/ai-sdlc/blob/main/dev-fixing-bugs/SKILL.md
+
+    - name: dev-implementing-features
+      description: Feature implementation via Red-Green-Refactor TDD cycle
+      source: https://github.com/Brain-Bridge-AI/ai-sdlc/blob/main/dev-implementing-features/SKILL.md
+
+    - name: dev-mcp-builder
+      description: Guide for creating MCP servers in Python (FastMCP) or TypeScript
+      source: https://github.com/Brain-Bridge-AI/ai-sdlc/blob/main/dev-mcp-builder/SKILL.md
+
+    - name: dev-notebooklm
+      description: Query NotebookLM notebooks for citation-backed research
+      source: https://github.com/Brain-Bridge-AI/ai-sdlc/blob/main/dev-notebooklm/SKILL.md
+      requires: [mcp:playwright]
+
+    - name: dev-planning-features
+      description: Feature planning with architectural review
+      source: https://github.com/Brain-Bridge-AI/ai-sdlc/blob/main/dev-planning-features/SKILL.md
+
+    - name: dev-quality-checks
+      description: Comprehensive quality validation — tests, types, security, lint
+      source: https://github.com/Brain-Bridge-AI/ai-sdlc/blob/main/dev-quality-checks/SKILL.md
+
+    - name: dev-refactoring
+      description: Incremental code refactoring with test preservation
+      source: https://github.com/Brain-Bridge-AI/ai-sdlc/blob/main/dev-refactoring/SKILL.md
+
+    - name: dev-reviewing-code
+      description: Comprehensive code review — correctness, security, quality, testing
+      source: https://github.com/Brain-Bridge-AI/ai-sdlc/blob/main/dev-reviewing-code/SKILL.md
+
+    - name: dev-shared-references
+      description: Shared coding standards, git conventions, AWS standards, and guides
+      source: https://github.com/Brain-Bridge-AI/ai-sdlc/blob/main/dev-shared-references
+
+    - name: dev-writing-integration-tests
+      description: Integration testing with Testcontainers and real dependencies
+      source: https://github.com/Brain-Bridge-AI/ai-sdlc/blob/main/dev-writing-integration-tests/SKILL.md
+
+    - name: dev-writing-unit-tests
+      description: Unit testing with pytest best practices and proper isolation
+      source: https://github.com/Brain-Bridge-AI/ai-sdlc/blob/main/dev-writing-unit-tests/SKILL.md
+
+    # --- Personal Library (aaroneden/personal-library) ---
+    - name: finding-calendar-availability
+      description: Find available meeting slots across all of Aaron's calendars (BB + AITB + Personal + Apple)
+      source: https://github.com/aaroneden/personal-library/blob/main/skills/finding-calendar-availability/reference.md
+      requires: [skill:calendar-availability]
+
+    - name: using-gog-personal
+      description: Google Workspace CLI with all 3 accounts (personal, BB, AITB)
+      source: https://github.com/aaroneden/personal-library/blob/main/skills/using-gog/configs/personal.yaml
+      requires: [skill:using-gog]
+
+    - name: looking-up-organizations
+      description: Search organizations across all Airtable bases (BB + AITB)
+      source: https://github.com/aaroneden/personal-library/blob/main/skills/looking-up-organizations/reference.md
+      requires: [skill:search-airtable]
+
+    - name: writing-code
+      description: Background coder agent — delegates coding tasks to Claude Opus in a background session
+      source: https://github.com/aaroneden/personal-library/blob/main/skills/writing-code/SKILL.md
+
+    - name: wishing-happy-birthdays
+      description: Daily birthday check with personalized wishes via Quill and Beeper delivery
+      source: https://github.com/aaroneden/personal-library/blob/main/skills/wishing-happy-birthdays/reference.md
+      requires: [mcp:beeper]
+
+    - name: managing-interest-profile
+      description: View, update, and evolve AI interest profile in Obsidian
+      source: https://github.com/aaroneden/personal-library/blob/main/skills/managing-interest-profile/reference.md
+
+    - name: ingesting-youtube
+      description: Browser-based YouTube homepage AI video recommendation scraping
+      source: https://github.com/aaroneden/personal-library/blob/main/skills/ingesting-youtube/reference.md
+      requires: [mcp:playwright]
+
+    - name: generating-weekly-digest
+      description: Build Obsidian weekly AI digest from scored content items
+      source: https://github.com/aaroneden/personal-library/blob/main/skills/generating-weekly-digest/reference.md
+
+    - name: flagging-social-queue
+      description: Flag top content items for social posting via Apple Shortcut
+      source: https://github.com/aaroneden/personal-library/blob/main/skills/flagging-social-queue/reference.md
+
+    - name: pablo-task-execution
+      description: Pablo's autonomous HITL task execution workflow reference
+      source: https://github.com/aaroneden/personal-library/blob/main/skills/pablo-task-execution/reference.md
+
+    - name: monthly-review
+      description: Monthly financial review — burn rate, task stats, goal progress
+      source: https://github.com/aaroneden/personal-library/blob/main/skills/monthly-review/reference.md
+
+    - name: creating-gratitude-reminders
+      description: Identify people to thank from recent interactions via Beeper + analysis
+      source: https://github.com/aaroneden/personal-library/blob/main/skills/creating-gratitude-reminders/reference.md
+      requires: [mcp:beeper]
+
+    - name: linkedin-connection-manager
+      description: Research and handle LinkedIn connection requests
+      source: https://github.com/aaroneden/personal-library/blob/main/skills/linkedin-connection-manager/reference.md
+      requires: [mcp:playwright]
+
+    - name: planning-family-time
+      description: Discover activities, plan and track family time using gog CLI
+      source: https://github.com/aaroneden/personal-library/blob/main/skills/planning-family-time/reference.md
+      requires: [skill:using-gog]
+
+    - name: syncing-facebook-birthdays
+      description: Sync Facebook birthdays to Apple Contacts via JS/AppleScript
+      source: https://github.com/aaroneden/personal-library/blob/main/skills/syncing-facebook-birthdays/reference.md
+      requires: [mcp:playwright]
+
+    - name: routing-voice-memos
+      description: Classify voice memo transcripts and route to Drive/Airtable/Obsidian
+      source: https://github.com/aaroneden/personal-library/blob/main/skills/routing-voice-memos/reference.md
+      requires: [skill:using-gog]
+
+    - name: searching-local-files
+      description: Search Obsidian vault, Filing Cabinet NAS, and Apple Notes for historical context and documents
+      source: https://github.com/aaroneden/personal-library/blob/main/skills/searching-local-files/reference.md
+
+    - name: checking-social-media
+      description: Alert on inactive social platforms, flag unanswered mentions, check site freshness
+      source: https://github.com/aaroneden/personal-library/blob/main/skills/checking-social-media/reference.md
+      requires: [mcp:playwright]
+
+    - name: archiving-apple-notes
+      description: Archive 365+ day old Apple Notes to Obsidian vault (macOS only)
+      source: https://github.com/aaroneden/personal-library/blob/main/skills/archiving-apple-notes/reference.md
+
+    - name: running-weekly-retros
+      description: Daily micro-retros + Sunday weekly aggregation and summary
+      source: https://github.com/aaroneden/personal-library/blob/main/skills/running-weekly-retros/reference.md
+
+    - name: delegating-todays-work
+      description: Split today's work between Aaron, Juan, and Pablo
+      source: https://github.com/aaroneden/personal-library/blob/main/skills/delegating-todays-work/reference.md
+
+    - name: analyzing-shadowtrader-reports
+      description: Analyze ShadowTrader reports, queue close/adjust tasks for trading positions
+      source: https://github.com/aaroneden/personal-library/blob/main/skills/analyzing-shadowtrader-reports/reference.md
+
+    - name: logging-completed-tasks
+      description: Fetch completed Airtable tasks and sync to Obsidian daily notes
+      source: https://github.com/aaroneden/personal-library/blob/main/skills/logging-completed-tasks/reference.md
+      requires: [skill:airtable-config]
+
+    - name: maintaining-relationships
+      description: Aaron's full relationship management router — all bases, all sub-skills
+      source: https://github.com/aaroneden/personal-library/blob/main/skills/maintaining-relationships/SKILL.md
+      requires: [mcp:playwright, mcp:beeper]
+
+    - name: managing-finances
+      description: Aaron's full financial management router — all bases, all sub-skills
+      source: https://github.com/aaroneden/personal-library/blob/main/skills/managing-finances/SKILL.md
+
+    - name: managing-projects
+      description: Aaron's full project management router — all bases, all sub-skills
+      source: https://github.com/aaroneden/personal-library/blob/main/skills/managing-projects/SKILL.md
+
+    - name: maintaining-systems
+      description: Aaron's system maintenance router — Apple Notes archival, weekly retros, recurring tasks
+      source: https://github.com/aaroneden/personal-library/blob/main/skills/maintaining-systems/SKILL.md
+      requires: [mcp:playwright]
+
+  agents: []
+
+  prompts:
+    # --- AI SDLC Commands (Brain-Bridge-AI/ai-sdlc) ---
+    - name: commit
+      description: Quality check then commit changes
+      source: https://github.com/Brain-Bridge-AI/ai-sdlc/blob/main/commit.md
+
+    - name: commit-only
+      description: Commit without quality checks
+      source: https://github.com/Brain-Bridge-AI/ai-sdlc/blob/main/commit-only.md
+
+    - name: commit_push_pr
+      description: Quality check, commit, push, and create PR
+      source: https://github.com/Brain-Bridge-AI/ai-sdlc/blob/main/commit_push_pr.md
+
+    - name: quality-check
+      description: Run all quality checks for the current codebase
+      source: https://github.com/Brain-Bridge-AI/ai-sdlc/blob/main/quality-check.md
+
+    - name: fix-bug
+      description: Bug fix workflow
+      source: https://github.com/Brain-Bridge-AI/ai-sdlc/blob/main/fix-bug.md
+
+    - name: plan-feature
+      description: Feature planning workflow
+      source: https://github.com/Brain-Bridge-AI/ai-sdlc/blob/main/plan-feature.md
+
+    - name: test
+      description: Run all quality checks for the current codebase
+      source: https://github.com/Brain-Bridge-AI/ai-sdlc/blob/main/test.md
+
+    - name: new-project
+      description: Set up a new Python development project
+      source: https://github.com/Brain-Bridge-AI/ai-sdlc/blob/main/new-project.md
+
+    - name: question
+      description: Answer a question about the codebase
+      source: https://github.com/Brain-Bridge-AI/ai-sdlc/blob/main/question.md
+
+    - name: worktree
+      description: Create a git worktree
+      source: https://github.com/Brain-Bridge-AI/ai-sdlc/blob/main/worktree.md
+
+    - name: squashed
+      description: Remove completed branch after merge
+      source: https://github.com/Brain-Bridge-AI/ai-sdlc/blob/main/squashed.md
+
+    - name: audit-aws-security
+      description: AWS security audit
+      source: https://github.com/Brain-Bridge-AI/ai-sdlc/blob/main/audit-aws-security.md
+
+    - name: roadmap-plan-01
+      description: Create a detailed plan for a roadmap item
+      source: https://github.com/Brain-Bridge-AI/ai-sdlc/blob/main/roadmap-plan-01.md
+
+    - name: roadmap-plan-02-architect
+      description: Architectural review of a plan file
+      source: https://github.com/Brain-Bridge-AI/ai-sdlc/blob/main/roadmap-plan-02-architect.md
+
+    - name: roadmap-plan-03-tests
+      description: Test specifications and Definition of Done for plans
+      source: https://github.com/Brain-Bridge-AI/ai-sdlc/blob/main/roadmap-plan-03-tests.md
+
+    - name: roadmap-execute
+      description: Execute a roadmap plan file
+      source: https://github.com/Brain-Bridge-AI/ai-sdlc/blob/main/roadmap-execute.md
+
+    - name: troubleshoot-01
+      description: Determine root cause of an error or issue
+      source: https://github.com/Brain-Bridge-AI/ai-sdlc/blob/main/troubleshoot-01.md
+
+    - name: troubleshoot-02
+      description: Resolve the bug or issue
+      source: https://github.com/Brain-Bridge-AI/ai-sdlc/blob/main/troubleshoot-02.md

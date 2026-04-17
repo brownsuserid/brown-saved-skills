@@ -135,31 +135,41 @@ def search_base(
 
     # Fetch more records than needed if filtering locally by assignee
     fetch_limit = max_records * 10 if assignee_id else max_records
-    fetch_limit = min(fetch_limit, 200)
 
-    params = {"maxRecords": str(fetch_limit)}
+    base_params = {}
     if formula:
-        params["filterByFormula"] = formula
-    params["sort[0][field]"] = base_cfg["score_field"]
-    params["sort[0][direction]"] = "desc"
+        base_params["filterByFormula"] = formula
+    base_params["sort[0][field]"] = base_cfg["score_field"]
+    base_params["sort[0][direction]"] = "desc"
+    base_params["pageSize"] = "100"
 
-    url = base_url + "?" + urllib.parse.urlencode(params)
-    req = urllib.request.Request(url, headers=api_headers())
-
-    try:
-        with urllib.request.urlopen(req) as resp:
-            data = json.loads(resp.read().decode())
-    except urllib.error.HTTPError as e:
-        print(
-            f"Warning: Error querying {base_key}: {e.read().decode()}", file=sys.stderr
-        )
-        return []
-    except Exception as e:
-        print(f"Warning: Error querying {base_key}: {e}", file=sys.stderr)
-        return []
+    all_records: list = []
+    offset: str | None = None
+    while len(all_records) < fetch_limit:
+        params = dict(base_params)
+        if offset:
+            params["offset"] = offset
+        url = base_url + "?" + urllib.parse.urlencode(params)
+        req = urllib.request.Request(url, headers=api_headers())
+        try:
+            with urllib.request.urlopen(req) as resp:
+                data = json.loads(resp.read().decode())
+        except urllib.error.HTTPError as e:
+            print(
+                f"Warning: Error querying {base_key}: {e.read().decode()}",
+                file=sys.stderr,
+            )
+            return []
+        except Exception as e:
+            print(f"Warning: Error querying {base_key}: {e}", file=sys.stderr)
+            return []
+        all_records.extend(data.get("records", []))
+        offset = data.get("offset")
+        if not offset:
+            break
 
     tasks = []
-    for record in data.get("records", []):
+    for record in all_records:
         fields = record.get("fields", {})
 
         # Local assignee filtering -- check if the record ID is in the Assignee array
@@ -216,6 +226,8 @@ def search_base(
             )
 
         tasks.append(task_data)
+        if len(tasks) >= max_records:
+            break
 
     return tasks
 
