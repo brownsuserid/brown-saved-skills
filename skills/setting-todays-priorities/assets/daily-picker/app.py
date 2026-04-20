@@ -26,6 +26,29 @@ sys.path.insert(0, os.path.join(SKILLS_DIR, "airtable-config"))
 sys.path.insert(0, os.path.join(SKILLS_DIR, "executing-tasks", "scripts"))
 sys.path.insert(0, os.path.join(SKILLS_DIR, "setting-todays-priorities", "scripts"))
 
+# Load a local .env file (if present) BEFORE importing airtable_config so
+# AIRTABLE_TOKEN is in os.environ when airtable_config reads it. Purely
+# additive — if no .env file exists, nothing happens and behavior is
+# unchanged. Does not override env vars already set by the shell.
+def _load_dotenv():
+    from pathlib import Path
+    env_path = Path(__file__).parent / ".env"
+    if not env_path.exists():
+        return
+    for raw in env_path.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        if "=" not in line:
+            continue
+        key, val = line.split("=", 1)
+        key = key.strip()
+        val = val.strip().strip('"').strip("'")
+        if key and key not in os.environ:
+            os.environ[key] = val
+
+_load_dotenv()
+
 import airtable_config  # noqa: E402
 from search_tasks import (  # noqa: E402
     _fetch_record,
@@ -36,10 +59,66 @@ from search_tasks import (  # noqa: E402
 )
 from set_for_today import update_for_today  # noqa: E402
 
+# HITL writeback safety layer. Co-located in this directory so it is editable
+# alongside the Flask app without crossing skill boundaries. See hitl_safety.py
+# for rationale and layer-by-layer docs.
+import hitl_safety  # noqa: E402
+
 app = Flask(__name__)
 
 CONFIG = airtable_config.load_config()
 PHOENIX_TZ = timezone(timedelta(hours=-7))
+
+
+# CORS for the prototype-only HITL endpoints. Scoped to specific paths so
+# Aaron's /hitl page and /api/hitl-respond are not touched. Permits the
+# static-server origin (localhost:8080) to call the Flask backend.
+_PROTOTYPE_CORS_PATHS = {
+    "/api/hitl-respond-safe",
+    "/api/hitl-preview",
+    "/api/hitl-cascade-decline",
+    "/api/hitl-freeze",
+    "/api/hitl-flags",
+    "/api/hitl-audit-tail",
+}
+_ALLOWED_ORIGINS = {
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
+}
+
+
+@app.after_request
+def _prototype_cors(response):
+    origin = request.headers.get("Origin", "")
+    if request.path in _PROTOTYPE_CORS_PATHS and origin in _ALLOWED_ORIGINS:
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+        response.headers["Access-Control-Max-Age"] = "600"
+    return response
+
+
+@app.route(
+    "/api/hitl-respond-safe", methods=["OPTIONS"], endpoint="_cors_preflight_safe"
+)
+@app.route(
+    "/api/hitl-preview", methods=["OPTIONS"], endpoint="_cors_preflight_preview"
+)
+@app.route(
+    "/api/hitl-freeze", methods=["OPTIONS"], endpoint="_cors_preflight_freeze"
+)
+@app.route(
+    "/api/hitl-flags", methods=["OPTIONS"], endpoint="_cors_preflight_flags"
+)
+@app.route(
+    "/api/hitl-audit-tail", methods=["OPTIONS"], endpoint="_cors_preflight_audit"
+)
+@app.route(
+    "/api/hitl-cascade-decline", methods=["OPTIONS"], endpoint="_cors_preflight_cascade"
+)
+def _cors_preflight():
+    """Bare 204 for CORS preflight. Headers are added by the after_request hook."""
+    return ("", 204)
 
 
 def _task_slim(t: dict) -> dict:
@@ -415,6 +494,11 @@ def api_hitl_tasks_stream():
 
 @app.route("/api/hitl-respond", methods=["POST"])
 def api_hitl_respond():
+    """Original HITL approve/decline endpoint used by Aaron's /hitl page.
+
+    Behavior preserved EXACTLY as written originally. Do not add safety-layer
+    coupling here. New prototype traffic uses /api/hitl-respond-safe instead.
+    """
     data = request.json
     record_id = data.get("id")
     base_key = data.get("base")
@@ -451,6 +535,424 @@ def api_hitl_respond():
     except Exception as e:
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
+
+
+# ---------------------------------------------------------------------------
+# Prototype-only safety-gated HITL write endpoint
+# ---------------------------------------------------------------------------
+# Parallel to /api/hitl-respond. All new prototype traffic routes here. Does
+# not touch Aaron's /hitl page or /api/hitl-respond behavior in any way.
+
+def _fetch_task_fields(base_key: str, record_id: str) -> dict:
+    """Fetch the current fields dict of a task record. Returns {} on miss."""
+    base_cfg = airtable_config.get_base(CONFIG, base_key)
+    rec = _fetch_record(base_cfg["base_id"], base_cfg["tasks_table_id"], record_id)
+    if not rec:
+        return {}
+    return rec.get("fields", {}) or {}
+
+
+def _derive_hitl_action(
+    approved: bool,
+    hitl_type: str,
+    has_def_of_done_edit: bool,
+) -> str:
+    """Map (approved, hitl_type, edit-flag) -> safety flag name."""
+    if approved:
+        if hitl_type == "output":
+            return "approve_output_edits" if has_def_of_done_edit else "approve_output_asis"
+        return "approve_plan"
+    return "decline"
+
+
+@app.route("/api/hitl-respond-safe", methods=["POST"])
+def api_hitl_respond_safe():
+    """Safety-gated HITL approve / decline used by the prototype.
+
+    Accepted request fields:
+        id                  (str, required)    Airtable record id
+        base                (str, required)    Base key from airtable_config
+        approved            (bool)             True for approve, False for decline
+        hitl_type           (str)              "output" or "plan"
+        response            (str)              Reviewer note / HITL Response text
+        definition_of_done  (str, optional)    Edited email draft. Omit when
+                                               the draft is unchanged.
+        dry_run             (bool)             If true, build payload but do not PATCH
+        idempotency_key     (str, optional)    UUID from UI. Same key within 10 min
+                                               returns the first response, no-op.
+        user                (str, optional)    Actor email for audit log.
+    """
+    data = request.json or {}
+    record_id = data.get("id")
+    base_key = data.get("base")
+    approved = bool(data.get("approved", False))
+    hitl_type = data.get("hitl_type", "plan")
+    response_text = (data.get("response") or "").strip()
+    dod_edit = data.get("definition_of_done")
+    dry_run = bool(data.get("dry_run", False))
+    idempotency_key = data.get("idempotency_key")
+    user = data.get("user") or _current_user()
+
+    if not record_id or not base_key:
+        return jsonify({"error": "Missing id or base"}), 400
+    if not approved and not response_text:
+        return jsonify({"error": "Response required when declining"}), 400
+
+    try:
+        base_cfg = airtable_config.get_base(CONFIG, base_key)
+    except KeyError:
+        return jsonify({"error": f"Unknown base '{base_key}'"}), 400
+
+    hitl_status_field = base_cfg.get("hitl_status_field")
+    hitl_response_field = base_cfg.get("hitl_response_field")
+    status_field = base_cfg["status_field"]
+    description_field = base_cfg.get("description_field", "Definition of Done")
+
+    if not hitl_status_field:
+        return jsonify({"error": "Base does not support HITL"}), 400
+
+    fields_before = _fetch_task_fields(base_key, record_id)
+    if not fields_before:
+        hitl_safety.audit_log({
+            "ts": hitl_safety._iso_now(),
+            "event": "snapshot_miss",
+            "task_id": record_id,
+            "base": base_key,
+            "note": "Could not read current fields_before; proceeding anyway",
+        })
+
+    has_dod_edit = False
+    if dod_edit is not None:
+        original_dod = (fields_before.get(description_field) or "").strip()
+        proposed_dod = (dod_edit or "").strip()
+        has_dod_edit = proposed_dod != original_dod and proposed_dod != ""
+
+    today = datetime.now(PHOENIX_TZ).strftime("%Y-%m-%d")
+    if approved and hitl_type == "output":
+        fields: dict = {
+            status_field: base_cfg["status_values"]["complete"],
+            "Date Complete": today,
+            hitl_status_field: "Response Submitted",
+        }
+        if has_dod_edit:
+            fields[description_field] = dod_edit
+            default_note = "Approved with edits"
+        else:
+            default_note = "Approved as-is"
+        if hitl_response_field:
+            fields[hitl_response_field] = response_text or default_note
+    elif approved:
+        fields = {hitl_status_field: "Response Submitted"}
+        if has_dod_edit:
+            fields[description_field] = dod_edit
+            default_note = "Approved with edits"
+        else:
+            default_note = "Approved"
+        if hitl_response_field:
+            fields[hitl_response_field] = response_text or default_note
+    else:
+        fields = {hitl_status_field: "Response Submitted"}
+        if hitl_response_field and response_text:
+            fields[hitl_response_field] = response_text
+
+    diff = hitl_safety.diff_fields(fields_before, fields)
+    fields_to_write = {k: v for k, v in fields.items() if k in diff}
+
+    if not fields_to_write:
+        return jsonify({
+            "ok": True,
+            "id": record_id,
+            "approved": approved,
+            "noop": True,
+            "message": "All proposed values already match current record; nothing to write.",
+        })
+
+    action = _derive_hitl_action(approved, hitl_type, has_dod_edit)
+
+    try:
+        result = hitl_safety.safe_patch_task(
+            action=action,
+            base_key=base_key,
+            record_id=record_id,
+            fields=fields_to_write,
+            fields_before={k: fields_before.get(k) for k in fields_to_write.keys()},
+            user=user,
+            dry_run=dry_run,
+            idempotency_key=idempotency_key,
+            patch_fn=_patch_task,
+            context={"hitl_type": hitl_type, "approved": approved},
+        )
+        result.setdefault("approved", approved)
+        return jsonify(result)
+    except hitl_safety.HitlWriteError as e:
+        return jsonify({
+            "error": e.message,
+            "code": e.code,
+            "details": e.details,
+        }), e.http_status
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+# ---------------------------------------------------------------------------
+# Cascade decline endpoint — prototype-only
+# ---------------------------------------------------------------------------
+# A cascade write is one reviewer decision that propagates to N tasks. The
+# caller supplies the primary task and the list of sibling task ids that
+# should be cascaded. Scope drives what gets written to each sibling.
+#
+# Request shape:
+# {
+#   "id": "recXXX",                 // primary task id
+#   "base": "bb",
+#   "hitl_type": "output" | "plan",
+#   "response": "reviewer note",
+#   "definition_of_done": "...",    // optional, for primary only
+#   "cascade_task_ids": ["recAAA", "recBBB", ...],  // siblings to cascade
+#   "scope": "plans" | "all",
+#   "dry_run": true,
+#   "idempotency_key": "uuid",
+#   "user": "brown@brainbridge.app"
+# }
+
+def _build_cascade_task_payload(
+    base_cfg: dict,
+    scope: str,
+    current_fields: dict,
+    note_text: str,
+) -> dict:
+    """Build the field writes for a SINGLE cascaded task (not the primary).
+
+    scope="plans": decline semantics only (HITL Status + HITL Response)
+    scope="all":   decline + Status=Cancelled
+    """
+    hitl_status_field = base_cfg["hitl_status_field"]
+    hitl_response_field = base_cfg.get("hitl_response_field")
+    status_field = base_cfg["status_field"]
+
+    if scope == "plans":
+        reason = "Cascade declined"
+    else:
+        reason = "Stopped by reviewer"
+    note = f"{reason}: {note_text}" if note_text else reason
+
+    proposed = {hitl_status_field: "Response Submitted"}
+    if hitl_response_field:
+        proposed[hitl_response_field] = note
+    if scope == "all":
+        proposed[status_field] = base_cfg["status_values"].get("cancelled", "Cancelled")
+
+    diff = hitl_safety.diff_fields(current_fields, proposed)
+    return {k: v for k, v in proposed.items() if k in diff}
+
+
+@app.route("/api/hitl-cascade-decline", methods=["POST"])
+def api_hitl_cascade_decline():
+    data = request.json or {}
+    record_id = data.get("id")
+    base_key = data.get("base")
+    hitl_type = data.get("hitl_type", "plan")
+    response_text = (data.get("response") or "").strip()
+    dod_edit = data.get("definition_of_done")
+    cascade_ids = data.get("cascade_task_ids") or []
+    scope = data.get("scope")
+    dry_run = bool(data.get("dry_run", False))
+    idempotency_key = data.get("idempotency_key")
+    user = data.get("user") or _current_user()
+
+    # Shape validation
+    if not record_id or not base_key:
+        return jsonify({"error": "Missing id or base"}), 400
+    if scope not in ("plans", "all"):
+        return jsonify({"error": "scope must be 'plans' or 'all'"}), 400
+    if not response_text:
+        return jsonify({"error": "Response note required for a cascade decline"}), 400
+    if not isinstance(cascade_ids, list):
+        return jsonify({"error": "cascade_task_ids must be a list"}), 400
+    for cid in cascade_ids:
+        if not isinstance(cid, str) or not cid.startswith("rec"):
+            return jsonify({"error": f"Invalid cascade task id: {cid!r}"}), 400
+
+    try:
+        base_cfg = airtable_config.get_base(CONFIG, base_key)
+    except KeyError:
+        return jsonify({"error": f"Unknown base '{base_key}'"}), 400
+
+    hitl_status_field = base_cfg.get("hitl_status_field")
+    hitl_response_field = base_cfg.get("hitl_response_field")
+    description_field = base_cfg.get("description_field", "Definition of Done")
+
+    if not hitl_status_field:
+        return jsonify({"error": "Base does not support HITL"}), 400
+
+    # --- Build the primary task write (decline semantics) ---
+    primary_before = _fetch_task_fields(base_key, record_id)
+    if not primary_before:
+        hitl_safety.audit_log({
+            "ts": hitl_safety._iso_now(),
+            "event": "snapshot_miss",
+            "task_id": record_id,
+            "base": base_key,
+            "note": "cascade primary snapshot miss",
+        })
+
+    primary_proposed: dict = {hitl_status_field: "Response Submitted"}
+    if hitl_response_field:
+        primary_proposed[hitl_response_field] = response_text
+    if scope == "all":
+        primary_proposed[base_cfg["status_field"]] = base_cfg["status_values"].get(
+            "cancelled", "Cancelled"
+        )
+    # Primary may also carry an edited Definition of Done (rare for decline,
+    # but the UI may surface it if the user edited before deciding to reject)
+    has_dod_edit = False
+    if dod_edit is not None:
+        original = (primary_before.get(description_field) or "").strip()
+        proposed = (dod_edit or "").strip()
+        has_dod_edit = proposed != original and proposed != ""
+        if has_dod_edit:
+            primary_proposed[description_field] = dod_edit
+    primary_diff = hitl_safety.diff_fields(primary_before, primary_proposed)
+    primary_fields_to_write = {k: v for k, v in primary_proposed.items() if k in primary_diff}
+
+    primary = {
+        "task_id": record_id,
+        "hitl_type": hitl_type,
+        "fields_to_write": primary_fields_to_write,
+        "fields_before": {k: primary_before.get(k) for k in primary_fields_to_write},
+    }
+
+    # --- Build each cascade task's write ---
+    cascades: list[dict] = []
+    for cid in cascade_ids:
+        before = _fetch_task_fields(base_key, cid)
+        if not before:
+            hitl_safety.audit_log({
+                "ts": hitl_safety._iso_now(),
+                "event": "snapshot_miss",
+                "task_id": cid,
+                "base": base_key,
+                "note": "cascade sibling snapshot miss",
+            })
+        to_write = _build_cascade_task_payload(base_cfg, scope, before, response_text)
+        if not to_write:
+            # Nothing to change for this task — skip entirely rather than
+            # sending an empty PATCH (Airtable would still mark it modified)
+            continue
+        cascades.append({
+            "task_id": cid,
+            "fields_to_write": to_write,
+            "fields_before": {k: before.get(k) for k in to_write},
+        })
+
+    if not primary_fields_to_write and not cascades:
+        return jsonify({
+            "ok": True,
+            "noop": True,
+            "message": "Nothing to write; all proposed values already match Airtable.",
+        })
+
+    # --- Hand off to the safety layer ---
+    try:
+        result = hitl_safety.safe_cascade_write(
+            scope=scope,
+            primary=primary,
+            cascades=cascades,
+            user=user,
+            dry_run=dry_run,
+            idempotency_key=idempotency_key,
+            base_id=base_cfg["base_id"],
+            table_id=base_cfg["tasks_table_id"],
+            api_headers_fn=airtable_config.api_headers,
+            api_url_fn=airtable_config.api_url,
+        )
+        return jsonify(result)
+    except hitl_safety.HitlWriteError as e:
+        return jsonify({
+            "error": e.message,
+            "code": e.code,
+            "details": e.details,
+        }), e.http_status
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+# ---------------------------------------------------------------------------
+# Safety-control endpoints (no-op for existing UI; used by the prototype)
+# ---------------------------------------------------------------------------
+
+@app.route("/api/hitl-freeze", methods=["GET", "POST"])
+def api_hitl_freeze():
+    """GET: return freeze status. POST: set freeze on/off."""
+    if request.method == "GET":
+        return jsonify(hitl_safety.freeze_status())
+    data = request.json or {}
+    state = hitl_safety.set_freeze(
+        bool(data.get("frozen", False)),
+        reason=data.get("reason", ""),
+        user=data.get("user") or _current_user(),
+    )
+    hitl_safety.audit_log({
+        "ts": hitl_safety._iso_now(),
+        "event": "freeze_set",
+        "state": state,
+    })
+    return jsonify(state)
+
+
+@app.route("/api/hitl-flags", methods=["GET", "POST"])
+def api_hitl_flags():
+    """GET: return feature-flag dict. POST: flip one flag.
+
+    POST body: {"action": "approve_output_asis", "enabled": true, "user": "..."}
+    """
+    if request.method == "GET":
+        return jsonify({
+            "flags": dict(hitl_safety.HITL_WRITE_FLAGS),
+            "frozen": hitl_safety.is_frozen(),
+        })
+    data = request.json or {}
+    action = data.get("action")
+    enabled = bool(data.get("enabled", False))
+    if action not in hitl_safety.HITL_WRITE_FLAGS:
+        return jsonify({"error": f"Unknown action '{action}'"}), 400
+    hitl_safety.HITL_WRITE_FLAGS[action] = enabled
+    hitl_safety.audit_log({
+        "ts": hitl_safety._iso_now(),
+        "event": "flag_set",
+        "action": action,
+        "enabled": enabled,
+        "user": data.get("user") or _current_user(),
+    })
+    return jsonify({"flags": dict(hitl_safety.HITL_WRITE_FLAGS)})
+
+
+@app.route("/api/hitl-audit-tail", methods=["GET"])
+def api_hitl_audit_tail():
+    n = request.args.get("n", "50")
+    try:
+        n_int = max(1, min(500, int(n)))
+    except ValueError:
+        n_int = 50
+    return jsonify({"entries": hitl_safety.audit_tail(n_int)})
+
+
+@app.route("/api/hitl-preview", methods=["POST"])
+def api_hitl_preview():
+    """Dry-run convenience wrapper: forces dry_run=true regardless of what
+    the client sent. Same request shape as /api/hitl-respond-safe. Used by
+    the prototype's preview-before-write modal so the client cannot
+    accidentally execute a live write from a preview call."""
+    payload = dict(request.json or {})
+    payload["dry_run"] = True
+    with app.test_request_context(
+        "/api/hitl-respond-safe",
+        method="POST",
+        json=payload,
+    ):
+        return api_hitl_respond_safe()
 
 
 @app.route("/api/delete", methods=["POST"])
