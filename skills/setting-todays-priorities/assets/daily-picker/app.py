@@ -63,6 +63,7 @@ from set_for_today import update_for_today  # noqa: E402
 # alongside the Flask app without crossing skill boundaries. See hitl_safety.py
 # for rationale and layer-by-layer docs.
 import hitl_safety  # noqa: E402
+import hitl_live_data  # noqa: E402
 
 app = Flask(__name__)
 
@@ -80,6 +81,8 @@ _PROTOTYPE_CORS_PATHS = {
     "/api/hitl-freeze",
     "/api/hitl-flags",
     "/api/hitl-audit-tail",
+    "/api/hitl-live-data",
+    "/api/hitl-status",
 }
 _ALLOWED_ORIGINS = {
     "http://localhost:8080",
@@ -115,6 +118,12 @@ def _prototype_cors(response):
 )
 @app.route(
     "/api/hitl-cascade-decline", methods=["OPTIONS"], endpoint="_cors_preflight_cascade"
+)
+@app.route(
+    "/api/hitl-live-data", methods=["OPTIONS"], endpoint="_cors_preflight_livedata"
+)
+@app.route(
+    "/api/hitl-status", methods=["OPTIONS"], endpoint="_cors_preflight_status"
 )
 def _cors_preflight():
     """Bare 204 for CORS preflight. Headers are added by the after_request hook."""
@@ -683,6 +692,11 @@ def api_hitl_respond_safe():
             context={"hitl_type": hitl_type, "approved": approved},
         )
         result.setdefault("approved", approved)
+        # A successful live write changes Airtable state that our live-data
+        # cache now holds stale. Invalidate so the next /api/hitl-live-data
+        # call triggers a fresh rebuild.
+        if not dry_run and result.get("ok"):
+            hitl_live_data.invalidate_cache()
         return jsonify(result)
     except hitl_safety.HitlWriteError as e:
         return jsonify({
@@ -867,6 +881,11 @@ def api_hitl_cascade_decline():
             api_headers_fn=airtable_config.api_headers,
             api_url_fn=airtable_config.api_url,
         )
+        # A successful live cascade changes Airtable state. Invalidate the
+        # live-data cache so the next prototype refresh reflects the new
+        # truth immediately.
+        if not dry_run and result.get("ok"):
+            hitl_live_data.invalidate_cache()
         return jsonify(result)
     except hitl_safety.HitlWriteError as e:
         return jsonify({
@@ -927,6 +946,124 @@ def api_hitl_flags():
         "user": data.get("user") or _current_user(),
     })
     return jsonify({"flags": dict(hitl_safety.HITL_WRITE_FLAGS)})
+
+
+@app.route("/api/hitl-status", methods=["GET"])
+def api_hitl_status():
+    """Return current Status + HITL Status for a comma-separated list of
+    task record IDs. Used by the prototype to verify freshness before
+    rendering a cluster: any task not still in a pending HITL state gets
+    filtered out, and if the whole cluster has been processed since last
+    load, the prototype bounces the user back to home.
+
+    Query param:
+        ids=recAAA,recBBB,recCCC   (max 50)
+
+    Response:
+        {
+          "statuses": {
+            "recAAA": {"status": "Human Review", "hitl_status": "Pending Review", "still_pending": true},
+            "recBBB": {"status": "Completed", "hitl_status": "Response Submitted", "still_pending": false},
+            "recMISSING": {"error": "not_found", "still_pending": false},
+            ...
+          }
+        }
+    """
+    ids_raw = request.args.get("ids", "")
+    ids = [x.strip() for x in ids_raw.split(",") if x.strip()]
+    if not ids:
+        return jsonify({"error": "No ids provided"}), 400
+    if len(ids) > 50:
+        return jsonify({"error": f"Too many ids ({len(ids)}, max 50)"}), 400
+    for rid in ids:
+        if not rid.startswith("rec"):
+            return jsonify({"error": f"Invalid id {rid!r}"}), 400
+
+    base_cfg = airtable_config.get_base(CONFIG, "bb")
+    base_id = base_cfg["base_id"]
+    table_id = base_cfg["tasks_table_id"]
+
+    # One filter call covers all ids — batched OR().
+    formula = "OR(" + ",".join(f"RECORD_ID()='{rid}'" for rid in ids) + ")"
+    url = f"{airtable_config.api_url(base_id, table_id)}?{urllib.parse.urlencode({'filterByFormula': formula, 'pageSize': 50})}"
+    req = urllib.request.Request(url, headers=airtable_config.api_headers())
+    try:
+        with urllib.request.urlopen(req, timeout=10) as r:
+            data = json.loads(r.read().decode())
+    except urllib.error.HTTPError as e:
+        body = ""
+        try:
+            body = e.read().decode("utf-8", errors="replace")[:300]
+        except Exception:
+            pass
+        return jsonify({
+            "error": f"Airtable HTTP {e.code}",
+            "code": "airtable_http_error",
+            "details": {"airtable_body": body},
+        }), 502
+    except Exception as e:
+        return jsonify({"error": str(e), "code": "unexpected"}), 500
+
+    # Build response keyed by id. Mark ids not returned as "not_found"
+    # (task may have been deleted or isn't in BB base).
+    got: dict[str, dict] = {}
+    for rec in data.get("records", []):
+        f = rec.get("fields", {}) or {}
+        status = f.get("Status", "")
+        hitl_status = f.get("HITL Status", "")
+        # A task is still pending HITL if:
+        #   Output task: Status == "Human Review" AND HITL Status == "Pending Review"
+        #   Plan task:   Status == "In Progress"  AND HITL Status == "Processed"
+        still_pending = (
+            (status == "Human Review" and hitl_status == "Pending Review")
+            or (status == "In Progress" and hitl_status == "Processed")
+        )
+        got[rec["id"]] = {
+            "status": status,
+            "hitl_status": hitl_status,
+            "still_pending": bool(still_pending),
+        }
+    for rid in ids:
+        if rid not in got:
+            got[rid] = {"error": "not_found", "still_pending": False}
+
+    return jsonify({"statuses": got, "queried": len(ids), "returned": len(data.get("records", []))})
+
+
+# Needed by api_hitl_status; centralizing the import here to match app.py style.
+import urllib.parse  # noqa: E402
+
+
+@app.route("/api/hitl-live-data", methods=["GET"])
+def api_hitl_live_data():
+    """Return the full HITL data payload (tasks + contacts + campaigns + stats)
+    computed LIVE from Airtable. Used by the prototype in place of the stale
+    embedded JSON snapshot.
+
+    Query params:
+        force=1  - bypass the 60-second in-memory cache and force a rebuild
+    """
+    force = request.args.get("force") in ("1", "true", "yes")
+    try:
+        payload = hitl_live_data.build_live_data(airtable_config, force=force)
+        return jsonify(payload)
+    except urllib.error.HTTPError as e:
+        body = ""
+        try:
+            body = e.read().decode("utf-8", errors="replace")[:500]
+        except Exception:
+            pass
+        return jsonify({
+            "error": f"Airtable HTTP {e.code}",
+            "code": "airtable_http_error",
+            "details": {"airtable_body": body},
+        }), 502
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({
+            "error": str(e),
+            "code": "unexpected",
+        }), 500
 
 
 @app.route("/api/hitl-audit-tail", methods=["GET"])
