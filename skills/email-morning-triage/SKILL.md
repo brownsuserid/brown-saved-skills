@@ -208,9 +208,9 @@ Every contact that appears in the inbox must be checked against Airtable. The go
 - Not all contacts need a deal. Josh decides. But always surface the option.
 
 **Presenting CRM gaps to Josh:**
-- During batch presentation (Step 4.2), include a `CRM:` status line for every email showing the current state.
-- If records are missing, ask Josh: "Want me to create a Contact/Organization/Deal for [Name]?"
-- If Josh declines, keep asking on future triages UNLESS Josh says "never ask again" for that specific contact/company.
+- During batch presentation (Step 4.2), include a `CRM:` status line for every email showing the current state. This is MANDATORY — never omit it.
+- If Contact, Organization, OR Deal is missing: flag it clearly and ask Josh: "Want me to create the missing records for [Name]?"
+- A hard CRM gate also runs at draft-save time (Step 5.2) regardless of what was surfaced here. Both checks are required.
 - Maintain a `CRM_NEVER_ASK` list in session memory. Contacts/orgs on this list are silently skipped in future sessions.
 - If Josh says "never ask again" for a contact, note it in the feedback rules file so it persists across sessions.
 
@@ -502,7 +502,7 @@ Josh issues commands in natural language. Interpret flexibly:
 | `archive 5` or `kill 5` | Archive that email |
 | `expand 2` or `tell me more about 2` | Show deep context brief |
 | `draft-all` or `draft everything` | Auto-draft all items with an auto-draft recommendation |
-| `clear` or `next` or `done` | Mark batch as processed, present next batch |
+| `clear` or `next` or `done` | Mark batch as processed, pull and present next batch automatically (do NOT ask "want me to pull the thread?") |
 | `skip` | Skip batch, come back later |
 | `brainy 4` or `schedule 4` | Auto-draft scheduling reply with Brainy CC |
 | `context [letters]` or `give me [letters]` or `full emails for [letters]` | Present full context format (Step 4.4) for those batches |
@@ -546,13 +546,39 @@ When Josh gives numbered commands for a batch like "1, 2, 3, 5 should be auto-dr
 | Thank you / confirmation | Brief acknowledgment, next steps if applicable |
 | Problem/complaint | Empathetic response, acknowledge issue, propose resolution path |
 
+**CRM Gate (MANDATORY before every draft is saved to Gmail):**
+
+Before saving any draft to Gmail via `gmail_create_draft`, run a CRM check on every primary recipient (To line). This is non-negotiable — do not skip even if you checked earlier in triage.
+
+For each recipient email address, verify in Airtable:
+- **Contact record exists** (`tbllWxmXIVG5wveiZ`) with a matching email address
+- **Organization record exists** linked to that contact (`tblPEqGDvtaJihkiP`)
+- **Deal record exists** linked to that contact or organization (`tblw6rTtN2QJCrOqf`)
+
+If ANY record is missing, STOP before saving the draft and present this to Josh:
+
+```
+⚠️ CRM GAP — [Name] <email>
+  Contact:      [✓ Found | ✗ Missing]
+  Organization: [✓ Found | ✗ Missing]
+  Deal:         [✓ Found | ✗ Missing]
+
+Want me to create the missing records automatically before saving the draft?
+(Yes / No / Never ask for this contact)
+```
+
+If Josh says yes: create the missing records (Organization first, then Contact linked to Org, then Deal linked to Org, stage "02-Contacted") and then save the draft.
+If Josh says no: save the draft without creating records.
+If Josh says "never ask": add to CRM_NEVER_ASK list and save the draft.
+
 **Draft Generation Process:**
 1. Determine tone from recipient analysis
 2. Determine intent from email content + deal stage + transcript context
 3. Generate draft following Josh's Email Writing Style Guide (see below)
 4. Scan for em dashes and double dashes. Rewrite any violations.
 5. Present draft in chat to Josh
-6. On approval: create as Gmail draft via `gmail_create_draft` (NEVER send)
+6. Run CRM Gate check on all recipients (see above)
+7. On approval and CRM resolution: create as Gmail draft via `gmail_create_draft` (NEVER send)
 
 **Gmail Signature Handling:**
 The Gmail MCP server automatically appends Josh's configured Gmail signature. Do NOT include a manual sign-off in the email body (no "Josh", "- Josh", "Best, Josh", etc.). End the email body with the last line of actual content.

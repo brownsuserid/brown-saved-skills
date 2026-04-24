@@ -70,3 +70,6 @@ When Josh asks to create a deal:
 
 ## Contact Routing
 - [Kirsten Iversen → Aaron Eden](feedback_kirsten_iversen_aaron.md) - All Kirsten Iversen tasks/campaigns assigned to Aaron, not Josh
+
+## Triage Flow
+- [Auto-pull next thread after archiving](feedback_triage_auto_pull.md) - After archiving a batch, always pull next thread automatically, never ask first
